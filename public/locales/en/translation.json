@@ -1,0 +1,77 @@
+{
+    "Cameras": "Cameras",
+    "Sort By": "Sort By",
+    "Home": "Home",
+    "Homepage": "Homepage",
+    "User Guide": "User Guide",
+    "Components": "Components",
+    "Models": "Models",
+    "Regions": "Regions",
+    "Roles & Permissions": "Roles & Permissions",
+    "Users": "Users",
+    "Authenication": "Authenication",
+    "Logs": "Logs",
+
+    "/home_page": "/home_page",
+    "/cameras_page": "/cameras_page",
+    "/phantoms_page": "/phantoms_page",
+    "/userguide_page": "/userguide_page",
+    "/components_page": "/components_page",
+    "/models_page": "/models_page",
+    "/regions_page": "/regions_page",
+    "/newCheckingSettings": "/newCheckingSettings",
+    "/newInferenceSettings": "/newInferenceSettings",
+    "/newTrackingSettings": "/newTrackingSettings",
+    "/robot-setup-guide": "/robot-setup-guide",
+    "/calibration-setup-guide": "/calibration-setup-guide",
+    "/offset-adjustment-guide": "/offset-adjustment-guide",
+
+    "Edit": "Edit",
+    "Delete": "Delete",
+    "Control": "Control",
+    "Save": "Save",
+
+
+    "Camera": "Camera",
+    "Name": "Name",
+    "Type": "Type",
+    "Search cameras...": "Search cameras...",
+
+
+    "Edit Camera": "Edit Camera",
+
+
+    "Basic Details": "Basic Details",
+    "Jobs": "Jobs",
+    "Calibration": "Calibration",
+    "Streams": "Streams",
+    "Advanced": "Advanced",
+    "Camera ID": "Camera ID",
+    "Camera Name": "Camera Name",
+    "Camera Type": "Camera Type",
+    "Source Type": "Source Type",
+    "Source": "Source",
+    "Backend": "Backend",
+    "Manual Focus Value": "Manual Focus Value",
+    "Exposure Time" : "Exposure Time",
+    "Exposure Mode" : "Exposure Mode",
+    "White Balance Mode" : "White Balance Mode",	
+    "White Balance Temperature" : "White Balance Temperature",
+    "Power Line Frequency" : "Power Line Frequency",
+    "Encoding" : "Encoding",
+    "Zoom" : "Zoom",
+    "Resolution" : "Resolution",
+
+    "Component" : "Component",
+    "Search components...": "Search components...",
+
+    "What do you want to do?": "What do you want to do?",
+    "Robot Setup guide": "Robot Setup guide",
+    "Calibration Setup guide": "Calibration Setup guide",
+    "Offset Adjustment guide": "Offset Adjustment guide",
+    "Step-by-step guide to setting up the robot arm for use in the system.": "Step-by-step guide to setting up the robot arm for use in the system.",
+    "Step-by-step guide to calibrating the cameras.": "Step-by-step guide to calibrating the cameras.",
+    "Step-by-step guide to adjusting the x and y variant offsets.": "Step-by-step guide to adjusting the x and y variant offsets."
+
+
+}

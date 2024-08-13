@@ -1,0 +1,77 @@
+{
+
+    "Cameras": "الكاميرات",
+    "Sort By": "ترتيب حسب",
+    "Home": "الصفحة الرئيسية",
+    "Homepage": "الصفحة الرئيسية",
+    "User Guide": "دليل المستخدم",
+    "Components": "المكونات",
+    "Models": "النماذج",
+    "Regions": "المناطق",
+    "Roles & Permissions": "الأدوار والأذونات",
+    "Users": "المستخدمين",
+    "Authenication": "المصادقة",
+    "Logs": "السجلات",
+
+    "/home_page": "السجلات",
+    "/cameras_page": "الكاميرات",
+    "/phantoms_page": "الأشباح",
+    "/userguide_page": "دليل المستخدم",
+    "/components_page": "المكونات",
+    "/models_page": "النماذج",
+    "/regions_page": "المناطق",
+    "/newCheckingSettings": "إعدادات التحقق الجديدة",
+    "/newInferenceSettings": "إعدادات الاستدلال الجديدة",
+    "/newTrackingSettings": "إعدادات التتبع الجديدة",
+    "/robot-setup-guide": "دليل إعداد الروبوت",
+    "/calibration-setup-guide": "دليل إعداد المعايرة",
+    "/offset-adjustment-guide": "دليل تعديل الإزاحة",
+
+    "Edit": "تحرير",
+    "Delete": "حذف",
+    "Control": "التحكم",
+    "Save": "حفظ",
+
+
+    "Camera": "آلة تصوير",
+    "Name": "اسم",
+    "Type": "نوع",
+
+
+    "Edit Camera": "تحرير الكاميرا",
+
+
+    "Basic Details": "التفاصيل الأساسية",
+    "Jobs": "وظائف",
+    "Calibration": "معايرة",
+    "Streams": "تيارات",
+    "Advanced": "متقدم",
+    "Camera ID": "معرف الكاميرا",
+    "Camera Name": "اسم الكاميرا",
+    "Camera Type": "نوع الكاميرا",
+    "Source Type": "نوع المصدر",
+    "Source": "مصدر",
+    "Backend": "الخلفية",
+    "Manual Focus Value": "قيمة التركيز اليدوي",
+    "Exposure Time" : "وقت التعرض",
+    "Exposure Mode" : "وضع التعرض",
+    "White Balance Mode" : "وضع التوازن الأبيض",
+    "White Balance Temperature" : "درجة حرارة التوازن الأبيض",
+    "Power Line Frequency" : "تردد خط الطاقة",
+    "Encoding" : "ترميز",
+    "Zoom" : "تكبير",
+    "Resolution" : "القرار",
+
+    "Component" : "مكون",
+    "Search components...": "ابحث عن المكونات...",
+
+    "What do you want to do?": "ماذا تريد أن تفعل؟",
+    "Search cameras...": "ابحث عن الكاميرات...",
+    "Robot Setup guide": "دليل إعداد الروبوت",
+    "Calibration Setup guide": "دليل إعداد المعايرة",
+    "Offset Adjustment guide": "دليل تعديل الإزاحة",
+    "Step-by-step guide to setting up the robot arm for use in the system.": "دليل خطوة بخطوة لإعداد ذراع الروبوت للاستخدام في النظام.",
+    "Step-by-step guide to calibrating the cameras.": "دليل خطوة بخطوة لمعايرة الكاميرات.",
+    "Step-by-step guide to adjusting the x and y variant offsets.": "دليل خطوة بخطوة لضبط الإزاحات المتغيرة x و y."
+
+}
