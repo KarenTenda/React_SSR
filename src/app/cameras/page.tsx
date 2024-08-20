@@ -3,7 +3,7 @@
 import useCameraService from './hooks/useCameraService';
 import React, { Suspense, useRef } from 'react';
 import { Container } from 'react-bootstrap';
-import CameraGrid from './components/CameraGrid';
+import CameraGrid from './components/cameraGrid/CameraGrid';
 
 const CamerasPage: React.FC = () => {
     const [cameras, savedCameraIDs] = useCameraService();

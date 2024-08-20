@@ -29,6 +29,8 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --sidebar-bg: 255, 255, 255;
+    --sidebar-text: 0, 0, 0;
   }
 
   .dark {
@@ -56,6 +58,8 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --sidebar-bg: 31, 41, 55;
+    --sidebar-text: 255, 255, 255;
   }
 }
 
@@ -63,7 +67,9 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gray-100 dark:bg-gray-900 text-foreground;
   }
+
 }

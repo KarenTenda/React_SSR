@@ -28,6 +28,7 @@ const useCameraOperations = (initialCameras:CameraStructure[]) => {
         deleteCamera,
         handleClose,
         showModal,
+        setShowModal,
         selectedCamera,
         setSelectedCamera,
         displayedCameras

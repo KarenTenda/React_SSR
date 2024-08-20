@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/sidebar";
 import { useState } from "react";
+import { ThemeProvider } from "@/components/provider/themeProvider/ThemeProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,28 +20,34 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Add any head tags here */}
       </head>
       <body className={inter.className}>
-        <div className="flex h-screen w-full bg-gray-100">
-          <Sidebar isCollapsed={isCollapsed} toggleSidebar={toggleSidebar} />
-          <div
-            className={`flex flex-col w-full h-full transition-all duration-300 ${
-              isCollapsed ? "ml-20" : "ml-64"
-            } p-4`}
-          >
-            {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="flex h-screen w-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+            <Sidebar isCollapsed={isCollapsed} toggleSidebar={toggleSidebar} />
+            <div
+              className={`flex flex-col w-full h-full transition-all duration-300 ${isCollapsed ? "ml-20" : "ml-64"
+                } p-4`}
+            >
+              {children}
+            </div>
           </div>
-        </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -49,8 +49,8 @@ const SidebarItem = ({ item, isCollapsed }: SidebarItemProps) => {
     <>
       <div
         className={`flex items-center p-3 rounded-lg cursor-pointer justify-between
-          hover:bg-salmon hover:text-sidebar-active
-          ${isActive && "bg-salmon text-sidebar-active"}`}
+          hover:bg-[#FA8072]-100 hover:text-sidebar-active
+          ${isActive && "bg-[#FA8072] text-sidebar-active"}`}
         onClick={onClick}
       >
         <div className="flex items-center space-x-2">

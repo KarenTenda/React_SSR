@@ -7,11 +7,15 @@ import {
   DatabaseIcon,
   HomeIcon,
   DocumentationIcon,
-  SettingsIcon
+  SettingsIcon,
+  DarkModeIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon
 
 } from "../../../public/assets/Icons";
 import SidebarItem from "./item";
 import { IconType } from "react-icons";
+import { ModeToggle } from "../custom/ModeToggle/ModeToggle";
 
 interface ISidebarItem {
   name: string;
@@ -48,15 +52,15 @@ const items: ISidebarItem[] = [
     items: [
       {
         name: "Components",
-        path: "/components",
+        path: "/phantoms/components",
       },
       {
         name: "Models",
-        path: "/models",
+        path: "/phantoms/models",
       },
       {
         name: "Regions",
-        path: "/regions",
+        path: "/phantoms/regions",
       },
     ],
   },
@@ -72,11 +76,11 @@ const items: ISidebarItem[] = [
     items: [
       {
         name: "Users",
-        path: "/users",
+        path: "/rolesPermissions/users",
       },
       {
         name: "Authentication",
-        path: "/authentication",
+        path: "/rolesPermissions/authentication",
       }
     ],
   },
@@ -92,11 +96,7 @@ const items: ISidebarItem[] = [
     items: [
       {
         name: "General",
-        path: "/settings",
-      },
-      {
-        name: "Dark Mode",
-        path: "/darkmode",
+        path: "/settings/general",
       },
       {
         name: "Notifications",
@@ -107,10 +107,12 @@ const items: ISidebarItem[] = [
 ];
 
 const Sidebar = ({ isCollapsed, toggleSidebar }: SidebarProps) => {
+  // const { setTheme } = useTheme()
+
   return (
     <div
       className={`fixed top-0 left-0 h-screen ${isCollapsed ? "w-20" : "w-64"
-        } bg-white shadow-lg z-10 p-4 transition-width duration-300`}
+        } bg-white dark:bg-gray-800 shadow-lg z-10 p-4 transition-width duration-300`}
     >
       <div className="flex flex-col space-y-10 w-full">
         <div className="flex flex-row space-y-2">
@@ -129,16 +131,22 @@ const Sidebar = ({ isCollapsed, toggleSidebar }: SidebarProps) => {
             <SidebarItem key={index} item={item} isCollapsed={isCollapsed} />
           ))}
         </div>
+
+        {/* Implement darkmode button at the button of sidebar */}
+        <ModeToggle />
+
       </div>
       <div
-        className={`absolute top-4 ${isCollapsed ? "left-20" : "left-64"
+        className={`absolute top-6 ${isCollapsed ? "left-20" : "left-64"
           } transform -translate-x-1/2 z-20`}
       >
         <button
           onClick={toggleSidebar}
-          className="bg-gray-200 w-8 h-8 flex items-center justify-center rounded-full shadow-lg"
+          className="w-6 h-6 flex items-center justify-center rounded-full border-2
+               bg-[#FA8072] border-white dark:border-[#FA8072]
+               text-white dark:text-gray-200 transition-colors duration-300"
         >
-          {isCollapsed ? ">" : "<"}
+          {isCollapsed ? <ArrowRightIcon /> : <ArrowLeftIcon />}
         </button>
       </div>
     </div>
