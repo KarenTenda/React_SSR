@@ -1,26 +1,19 @@
 "use client";
 import Image from "next/image";
-import {
-  CamerasIcon,
-  PhantomsIcon,
-  RolesIcon,
-  DatabaseIcon,
-  HomeIcon,
-  DocumentationIcon,
-  SettingsIcon,
-  DarkModeIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon
-
-} from "../../../public/assets/Icons";
 import SidebarItem from "./item";
-import { IconType } from "react-icons";
 import { ModeToggle } from "../custom/ModeToggle/ModeToggle";
+import { useState } from "react";
+
+import {
+  CamerasIcon, HomeIcon, PhantomsIcon, RolesIcon,
+  DatabaseIcon, DocumentationIcon, SettingsIcon, 
+  DarkModeIcon, ArrowLeftIcon, ArrowRightIcon 
+} from "@/public/assets/Icons";
 
 interface ISidebarItem {
   name: string;
   path: string;
-  icon: IconType;
+  icon: React.ElementType;
   items?: ISubItem[];
 }
 
@@ -107,7 +100,15 @@ const items: ISidebarItem[] = [
 ];
 
 const Sidebar = ({ isCollapsed, toggleSidebar }: SidebarProps) => {
-  // const { setTheme } = useTheme()
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
+
+  const handleItemClick = (name: string) => {
+    setExpandedItem(expandedItem === name ? null : name);
+  };
+
+  const handleSubItemClick = () => {
+    setExpandedItem(null); // Collapse subitems after navigating
+  };
 
   return (
     <div
@@ -128,13 +129,18 @@ const Sidebar = ({ isCollapsed, toggleSidebar }: SidebarProps) => {
 
         <div className="flex flex-col space-y-2">
           {items.map((item, index) => (
-            <SidebarItem key={index} item={item} isCollapsed={isCollapsed} />
+            <SidebarItem
+              key={index}
+              item={item}
+              isCollapsed={isCollapsed}
+              isExpanded={expandedItem === item.name}
+              onClickItem={() => handleItemClick(item.name)}
+              onSubItemClick={handleSubItemClick}
+            />
           ))}
         </div>
 
-        {/* Implement darkmode button at the button of sidebar */}
         <ModeToggle />
-
       </div>
       <div
         className={`absolute top-6 ${isCollapsed ? "left-20" : "left-64"

@@ -1,14 +1,13 @@
 "use client";
-import { useMemo, useState } from "react";
-import { ChevronDown, LucideIcon } from "lucide-react";
+import { useMemo } from "react";
+import { ChevronDown } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import SubMenuItem from "./sub-item";
-import { IconType } from "react-icons";
 
 interface ISidebarItem {
   name: string;
   path: string;
-  icon: IconType;
+  icon: React.ElementType;
   items?: ISubItem[];
 }
 
@@ -20,27 +19,33 @@ interface ISubItem {
 interface SidebarItemProps {
   item: ISidebarItem;
   isCollapsed: boolean;
+  isExpanded: boolean;
+  onClickItem: () => void;
+  onSubItemClick: () => void;
 }
 
-const SidebarItem = ({ item, isCollapsed }: SidebarItemProps) => {
+const SidebarItem = ({ item, isCollapsed, isExpanded, onClickItem, onSubItemClick }: SidebarItemProps) => {
   const { name, icon: Icon, items, path } = item;
-  const [expanded, setExpanded] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   const onClick = () => {
     if (items && items.length > 0) {
-      return setExpanded(!expanded);
+      onClickItem();  // Handle expanding/collapsing subitems
+    } else {
+      onSubItemClick();  // Collapse any expanded items if a different main item is clicked
+      router.push(path);
     }
-    return router.push(path);
+  };
+
+  const handleSubItemClick = (path: string) => {
+    router.push(path);
+    onSubItemClick(); // Collapse the subitems
   };
 
   const isActive = useMemo(() => {
     if (items && items.length > 0) {
-      if (items.find((subItem) => subItem.path === pathname)) {
-        setExpanded(true);
-        return true;
-      }
+      return items.some((subItem) => subItem.path === pathname);
     }
     return path === pathname;
   }, [items, path, pathname]);
@@ -49,20 +54,33 @@ const SidebarItem = ({ item, isCollapsed }: SidebarItemProps) => {
     <>
       <div
         className={`flex items-center p-3 rounded-lg cursor-pointer justify-between
-          hover:bg-[#FA8072]-100 hover:text-sidebar-active
-          ${isActive && "bg-[#FA8072] text-sidebar-active"}`}
+          hover:bg-[#FA8072]
+          ${isActive ? "bg-[#FA8072]" : ""}
+          ${isCollapsed && isExpanded ? "relative z-20 bg-[#FA8072] shadow-lg" : ""}`}
         onClick={onClick}
+        style={{ width: isCollapsed && isExpanded ? "auto" : "auto" }} 
       >
         <div className="flex items-center space-x-2">
           <Icon size={20} />
           {!isCollapsed && <p className="text-sm font-semibold">{name}</p>}
         </div>
-        {!isCollapsed && items && items.length > 0 && <ChevronDown size={18} />}
+        {items && items.length > 0 && (
+          <ChevronDown size={18} className={`${isExpanded ? 'transform rotate-180' : ''}`} />
+        )}
       </div>
-      {!isCollapsed && expanded && items && items.length > 0 && (
-        <div className="flex flex-col space-y-1 ml-10">
+      {isExpanded && items && items.length > 0 && (
+        <div 
+          className={`flex flex-col space-y-1 ${isCollapsed ? "absolute bg-red-200 p-2 rounded-lg left-16" : "ml-10"}`}  
+          style={{ top: isCollapsed ? "auto" : "auto" }}  
+        >
           {items.map((subItem) => (
-            <SubMenuItem key={subItem.path} item={subItem} />
+            <div
+              key={subItem.path}
+              className="cursor-pointer"
+              onClick={() => handleSubItemClick(subItem.path)}
+            >
+              <SubMenuItem item={subItem} />
+            </div>
           ))}
         </div>
       )}

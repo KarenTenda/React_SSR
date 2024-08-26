@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { IconType } from 'react-icons';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 interface ClickableIconButtonProps {
-  Icon: IconType;
+  Icon: React.ElementType;
   onClick: () => void;
   tooltipText: string;
   disabled?: boolean;
