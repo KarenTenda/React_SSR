@@ -4,18 +4,17 @@ import useCameraService from './hooks/useCameraService';
 import React, { Suspense, useRef } from 'react';
 import { Container } from 'react-bootstrap';
 import CameraGrid from './components/cameraGrid/CameraGrid';
+// import CameraEventsService from './services/CameraEventsService';
 
 const CamerasPage: React.FC = () => {
     const [cameras, savedCameraIDs] = useCameraService();
-    const ref = useRef<null | HTMLButtonElement>(null);
 
     return (
         <Container fluid>
-            <Suspense fallback={<div>Loading data...</div>}>
+            <Suspense fallback={<div>Loading camera data...</div>}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                     <CameraGrid cameras={cameras} />
-                    {/* <Button ref={ref} size='sm' variant='outline' >Click me</Button> */}
-                    {/* <CameraForm /> */}
+                    {/* <CameraEventsService /> */}
                 </div>
             </Suspense>
         </Container>

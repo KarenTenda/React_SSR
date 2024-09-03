@@ -8,14 +8,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import CameraSettingsForm from '../forms/CameraSettingsForm';
-import { CameraStructure } from '@/app/cameras/structure/CameraStructure';
+import { CamerASettingsTab } from '@/app/cameras/components/cameraSettings/CameraSettingsTabs';
+import { CameraSettings } from '@/app/cameras/schemas/CameraSettingsSchemas';
 import { useLabels } from '@/hooks/useLabels';
 
 interface CameraModalProps {
   open: boolean;
   onClose: () => void;
-  camera: CameraStructure | null;
+  camera: CameraSettings;
 }
 
 const CameraSettingsModal: React.FC<CameraModalProps> = ({ open, onClose, camera }) => {
@@ -23,18 +23,18 @@ const CameraSettingsModal: React.FC<CameraModalProps> = ({ open, onClose, camera
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{labels.EditCamera}</DialogTitle>
           <DialogDescription>
             Make changes to your camera settings here. Click save when youre done.
           </DialogDescription>
         </DialogHeader>
-        <CameraSettingsForm />
-        <DialogFooter>
+        <CamerASettingsTab camera={camera}/>
+        {/* <DialogFooter>
           <Button type="button" onClick={onClose}>Cancel</Button>
           <Button type="submit">Save changes</Button>
-        </DialogFooter>
+        </DialogFooter> */}
       </DialogContent>
     </Dialog>
   );

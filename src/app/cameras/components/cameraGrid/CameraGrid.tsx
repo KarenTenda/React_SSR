@@ -1,10 +1,11 @@
 import React, {useRef,useState, useEffect} from 'react'
-import { CameraStructure } from '../../structure/CameraStructure'
+// import { CameraStructure } from '../../structure/CameraStructure'
+import { CameraSettings } from '../../schemas/CameraSettingsSchemas'
 import CameraSettingsModal from '@/components/custom/modals/CameraSettingsModal'
 import CameraCard from '@/components/custom/cards/CameraCard'
 import useCameraOperations from '../../hooks/useCameraOperations'
 
-const CameraGrid = ({ cameras }: { cameras: CameraStructure[] }) => {
+const CameraGrid = ({ cameras }: { cameras: CameraSettings[] }) => {
     const {
         handleEditCameraSettings,
         deleteCamera,

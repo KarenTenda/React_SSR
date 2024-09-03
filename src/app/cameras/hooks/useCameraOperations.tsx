@@ -2,17 +2,18 @@
 
 import React, {useState, useEffect} from 'react'
 import { CameraStructure } from '../structure/CameraStructure'
+import { CameraSettings } from '../schemas/CameraSettingsSchemas';
 
-const useCameraOperations = (initialCameras:CameraStructure[]) => {
-    const [displayedCameras, setDisplayedCameras] = useState<CameraStructure[]>(initialCameras);
+const useCameraOperations = (initialCameras:CameraSettings[]) => {
+    const [displayedCameras, setDisplayedCameras] = useState<CameraSettings[]>(initialCameras);
     const [showModal, setShowModal] = useState(false);
-    const [selectedCamera, setSelectedCamera] = useState<CameraStructure | null>(null);
+    const [selectedCamera, setSelectedCamera] = useState<CameraSettings | null>(null);
 
     useEffect(() => {
         setDisplayedCameras(initialCameras);
     }, [initialCameras]);
 
-    const handleEditCameraSettings = (camera:CameraStructure) => {
+    const handleEditCameraSettings = (camera:CameraSettings) => {
         setSelectedCamera(camera);
         setShowModal(true);
     };

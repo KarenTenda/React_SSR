@@ -61,7 +61,7 @@ export function useDebounceEffect(
 ) {
   useEffect(() => {
     const t = setTimeout(() => {
-      fn();  // Call fn directly
+      fn();
     }, waitTime);
 
     return () => {
@@ -119,243 +119,13 @@ const CollectDataUsingWebcam = ({
   const [images, setImages] = useState<string[]>([]);
   const aspect = 1;
 
-  // useEffect(() => {
-  //   if (cameras.length > 0 && !selectedCameraId) {
-  //     setSelectedCameraId(cameras[0].id);
-  //   }
-
-  //   // If the selected camera has center crop enabled or if the resolution isn't square
-  //   if (selectedCameraId) {
-  //     const cameraSettings = cameras.find((camera) => camera.id === selectedCameraId);
-
-  //     if (cameraSettings) {
-  //       const [width, height] = cameraSettings.resolution;
-
-  //       if (cameraSettings.centre_crop || width !== height) {
-  //         console.log('Cropping image for camera:');
-  //         const src = `${Urls.fetchPhantomCamera}/${selectedCameraId}/stream`;
-  //         cropImage(src, width, height);
-  //       } else {
-  //         console.log('No cropping needed:');
-  //         setImgSrc(`${Urls.fetchPhantomCamera}/${selectedCameraId}/stream`);
-  //       }
-  //     }
-  //   }
-  // }, [cameras, selectedCameraId]);
-
-  // const cropImage = (src, width, height) => {
-  //   const img = new Image();
-  //   img.crossOrigin = 'anonymous';
-  //   img.src = src;
-
-  //   img.onload = () => {
-  //     const canvas = document.createElement('canvas');
-  //     const ctx = canvas.getContext('2d');
-
-  //     const cropSide = Math.min(width, height);
-  //     const startX = (width - cropSide) / 2;
-  //     const startY = (height - cropSide) / 2;
-
-  //     canvas.width = cropSide;
-  //     canvas.height = cropSide;
-
-  //     ctx.drawImage(img, startX, startY, cropSide, cropSide, 0, 0, cropSide, cropSide);
-
-  //     const croppedSrc = canvas.toDataURL('image/jpeg');
-  //     setImgSrc(croppedSrc);
-  //   };
-
-  //   img.onerror = (error) => {
-  //     console.error('Error loading image for cropping:', error);
-  //   };
-  // };
-
-
-  // const handleCameraSelect = async (cameraId: string) => {
-  //   setSelectedCameraId(cameraId);
-  //   setImgSrc(`${Urls.fetchPhantomCamera}/${cameraId}/stream`);
-  // };
-
-
-  // const handleDeleteImage = (index: number) => {
-  //   const newImages = images.filter((_, i) => i !== index);
-  //   setImages(newImages);
-  // };
-
-  // function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-  //   if (aspect) {
-  //     const { width, height } = e.currentTarget
-  //     setCrop(centerAspectCrop(width, height, aspect))
-  //   }
-  // }
-
-  // // useDebounceEffect(
-  // //   async () => {
-  // //     if (
-  // //       completedCrop?.width &&
-  // //       completedCrop?.height &&
-  // //       imgRef.current &&
-  // //       previewCanvasRef.current
-  // //     ) {
-  // //       canvasPreview(
-  // //         imgRef.current,
-  // //         previewCanvasRef.current,
-  // //         completedCrop,
-  // //         scale,
-  // //         rotate,
-  // //       )
-  // //     }
-  // //   },
-  // //   100,
-  // //   [completedCrop, scale, rotate],
-  // // )
-
-  // useDebounceEffect(
-  //   async () => {
-  //     if (
-  //       completedCrop?.width &&
-  //       completedCrop?.height &&
-  //       imgRef.current &&
-  //       previewCanvasRef.current
-  //     ) {
-  //       console.log('completedCrop', completedCrop)
-  //       console.log("imgRef.current", imgRef.current)
-  //       console.log("previewCanvasRef.current", previewCanvasRef.current)
-  //       const scaleX = imgRef.current.naturalWidth / imgRef.current.width; // Use the displayed width
-  //       const scaleY = imgRef.current.naturalHeight / imgRef.current.height; // Use the displayed height
-
-  //       previewCanvasRef.current.width = completedCrop.width * scaleX;
-  //       previewCanvasRef.current.height = completedCrop.height * scaleY;
-
-  //       const ctx = previewCanvasRef.current.getContext('2d');
-
-  //       if (ctx) {
-  //         ctx.clearRect(0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
-
-  //         // Adjust the crop area by the scaling factors
-  //         ctx.drawImage(
-  //           imgRef.current,
-  //           completedCrop.x * scaleX,
-  //           completedCrop.y * scaleY,
-  //           completedCrop.width * scaleX,
-  //           completedCrop.height * scaleY,
-  //           0,
-  //           0,
-  //           previewCanvasRef.current.width,
-  //           previewCanvasRef.current.height
-  //         );
-  //       }
-  //     }
-  //   },
-  //   100,
-  //   [completedCrop, scale, rotate],
-  // )
-
-  // function startContinuousCapture() {
-  //   setIsContinuousCapture(true);
-  //   setTimeout(() => {
-  //     intervalRef.current = setInterval(() => {
-  //       captureCroppedImage();
-  //     }, 300);
-  //   }, 500);
-  // }
-
-  // function stopContinuousCapture() {
-  //   setIsContinuousCapture(false);
-  //   if (intervalRef.current) {
-  //     clearInterval(intervalRef.current);
-  //     intervalRef.current = null;
-  //   }
-  // }
-
-  // // function captureCroppedImage() {
-  // //   if (!completedCrop || !imgRef.current) {
-  // //     return;
-  // //   }
-
-  // //   const canvas = document.createElement('canvas');
-  // //   const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-  // //   const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-
-  // //   canvas.width = completedCrop.width * scaleX;
-  // //   canvas.height = completedCrop.height * scaleY;
-  // //   const ctx = canvas.getContext('2d');
-
-
-
-  // //   if (ctx) {
-  // //     imgRef.current.crossOrigin = "anonymous";
-  // //     ctx.drawImage(
-  // //       imgRef.current,
-  // //       completedCrop.x * scaleX,
-  // //       completedCrop.y * scaleY,
-  // //       completedCrop.width * scaleX,
-  // //       completedCrop.height * scaleY,
-  // //       0,
-  // //       0,
-  // //       canvas.width,
-  // //       canvas.height
-  // //     );
-
-  // //     // Convert canvas to image URL
-  // //     const imageUrl = canvas.toDataURL('image/jpeg');
-  // //     console.log('Captured image URL:', imageUrl);
-
-  // //     // Add the captured image to the state
-  // //     setImages((prevImages) => [...prevImages, imageUrl]);
-  // //   }
-  // // }
-
-  // function captureCroppedImage() {
-  //   if (!imgRef.current) {
-  //     return;
-  //   }
-
-  //   const canvas = document.createElement('canvas');
-  //   const ctx = canvas.getContext('2d');
-  //   const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-  //   const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-
-  //   if (completedCrop) {
-  //     canvas.width = completedCrop.width * scaleX;
-  //     canvas.height = completedCrop.height * scaleY;
-  //     imgRef.current.crossOrigin = "anonymous",
-  //       ctx?.drawImage(
-
-  //         imgRef.current,
-  //         completedCrop.x * scaleX,
-  //         completedCrop.y * scaleY,
-  //         completedCrop.width * scaleX,
-  //         completedCrop.height * scaleY,
-  //         0,
-  //         0,
-  //         canvas.width,
-  //         canvas.height
-  //       );
-  //   } else {
-  //     canvas.width = imgRef.current.naturalWidth;
-  //     canvas.height = imgRef.current.naturalHeight;
-  //     imgRef.current.crossOrigin = "anonymous",
-  //       ctx?.drawImage(
-  //         imgRef.current,
-  //         0,
-  //         0,
-  //         imgRef.current.naturalWidth,
-  //         imgRef.current.naturalHeight,
-  //         0,
-  //         0,
-  //         canvas.width,
-  //         canvas.height
-  //       );
-  //   }
-
-  //   const imageUrl = canvas.toDataURL('image/jpeg');
-  //   setImages((prevImages) => [...prevImages, imageUrl]);
-  // }
 
   const handleCameraSelect = async (cameraId: string) => {
     setSelectedCameraId(cameraId);
     setImgSrc(`${Urls.fetchPhantomCamera}/${cameraId}/stream`);
+
+    setCrop(undefined);
+    setCompletedCrop(undefined);
   };
 
   const handleDeleteImage = (index: number) => {
@@ -365,44 +135,11 @@ const CollectDataUsingWebcam = ({
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
-    setCrop(centerAspectCrop(width, height, aspect));
+    if (aspect) {
+      setCrop(centerAspectCrop(width, height, aspect));
+    }
   }
 
-  // useDebounceEffect(
-  //   async () => {
-  //     if (
-  //       completedCrop?.width && 
-  //       completedCrop?.height && 
-  //       imgRef.current && 
-  //       previewCanvasRef.current
-  //     ) {
-  //       const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-  //       const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-
-  //       previewCanvasRef.current.width = completedCrop.width * scaleX;
-  //       previewCanvasRef.current.height = completedCrop.height * scaleY;
-
-  //       const ctx = previewCanvasRef.current.getContext('2d');
-
-  //       if (ctx) {
-  //         ctx.clearRect(0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
-  //         ctx.drawImage(
-  //           imgRef.current,
-  //           completedCrop.x * scaleX,
-  //           completedCrop.y * scaleY,
-  //           completedCrop.width * scaleX,
-  //           completedCrop.height * scaleY,
-  //           0,
-  //           0,
-  //           previewCanvasRef.current.width,
-  //           previewCanvasRef.current.height
-  //         );
-  //       }
-  //     }
-  //   },
-  //   100,
-  //   [completedCrop],
-  // );
 
   useEffect(() => {
     if (
@@ -411,32 +148,37 @@ const CollectDataUsingWebcam = ({
       imgRef.current &&
       previewCanvasRef.current
     ) {
-      const scaleX = imgRef.current.naturalWidth / imgRef.current.width; 
-      const scaleY = imgRef.current.naturalHeight / imgRef.current.height; 
+      const canvas = previewCanvasRef.current;
+      const ctx = canvas.getContext('2d');
   
-      previewCanvasRef.current.width = completedCrop.width * scaleX;
-      previewCanvasRef.current.height = completedCrop.height * scaleY;
+      if (!ctx) return;
   
-      const ctx = previewCanvasRef.current.getContext('2d');
+      const { naturalWidth, naturalHeight } = imgRef.current;
+      const { width, height } = imgRef.current.getBoundingClientRect();
   
-      if (ctx) {
-        ctx.clearRect(0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
+      // Calculate scale based on actual image dimensions on screen
+      const scaleX = naturalWidth / width;
+      const scaleY = naturalHeight / height;
   
-        ctx.drawImage(
-          imgRef.current,
-          completedCrop.x * scaleX,
-          completedCrop.y * scaleY,
-          completedCrop.width * scaleX,
-          completedCrop.height * scaleY,
-          0,
-          0,
-          previewCanvasRef.current.width,
-          previewCanvasRef.current.height
-        );
-      }
+      // Set canvas dimensions based on scaled crop
+      canvas.width = completedCrop.width * scaleX;
+      canvas.height = completedCrop.height * scaleY;
+  
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+      ctx.drawImage(
+        imgRef.current,
+        completedCrop.x * scaleX,
+        completedCrop.y * scaleY,
+        completedCrop.width * scaleX,
+        completedCrop.height * scaleY,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
     }
-  }, [completedCrop, scale, rotate]);
-  
+  }, [completedCrop]);
 
   function startContinuousCapture() {
     setIsContinuousCapture(true);
@@ -470,7 +212,7 @@ const CollectDataUsingWebcam = ({
       canvas.height = completedCrop.height * scaleY;
 
       imgRef.current.crossOrigin = "anonymous";
-      
+
       ctx?.drawImage(
         imgRef.current,
         completedCrop.x * scaleX,
@@ -547,9 +289,9 @@ const CollectDataUsingWebcam = ({
                 alt="Crop me"
                 src={imgSrc}
                 onLoad={onImageLoad}
-                // style={{ width: '720px', height: '720px', objectFit: 'cover' }}
               />
             </ReactCrop>
+
 
             <Button
               className='text-sm'
@@ -568,7 +310,7 @@ const CollectDataUsingWebcam = ({
                 alt="View"
                 src={imgSrc}
                 onLoad={onImageLoad}
-                // style={{ width: '720px', height: '720px', objectFit: 'cover' }}
+              // style={{ width: '720px', height: '720px', objectFit: 'cover' }}
               />
               <Button
                 onClick={() => setIsCropping(true)}
@@ -646,9 +388,6 @@ const CollectDataUsingWebcam = ({
             </div>
           </>
         )}
-
-
-
       </div>
     </>
   )

@@ -36,6 +36,7 @@ function useCameraService(): [CameraStructure[], string[]] {
         setCameras(data);
       } catch (error) {
         toast({
+          variant: "destructive",
           title: "Uh Oh! Something went wrong",
           description: "Unable to connect to the server or fetch data",
         });

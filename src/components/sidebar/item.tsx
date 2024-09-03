@@ -70,7 +70,7 @@ const SidebarItem = ({ item, isCollapsed, isExpanded, onClickItem, onSubItemClic
       </div>
       {isExpanded && items && items.length > 0 && (
         <div 
-          className={`flex flex-col space-y-1 ${isCollapsed ? "absolute bg-red-200 p-2 rounded-lg left-16" : "ml-10"}`}  
+          className={`flex flex-col space-y-2 ${isCollapsed ? "absolute bg-red-200 p-4 rounded-lg left-16" : "ml-10"}`}  
           style={{ top: isCollapsed ? "auto" : "auto" }}  
         >
           {items.map((subItem) => (
