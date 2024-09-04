@@ -2,21 +2,27 @@ import React from 'react';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PencilIcon, DotsVerticalIcon } from '../../../../../../../../../../public/assets/Icons';
+import { on } from 'events';
 
 interface CardHeaderComponentProps {
     title: string;
     onEditClick: () => void;
     isEditing: boolean;
     setIsEditing: (isEditing: boolean) => void;
+    onTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onTitleBlur: () => void;
 }
 
-const CardHeaderComponent: React.FC<CardHeaderComponentProps> = ({ title, onEditClick, isEditing, setIsEditing }) => (
+const CardHeaderComponent: React.FC<CardHeaderComponentProps> = ({ 
+  title, onEditClick, isEditing, setIsEditing, onTitleChange, onTitleBlur
+}) => (
   <CardHeader className="flex flex-row justify-between items-center px-3 py-2">
     <div className="flex items-center space-x-2">
       {isEditing ? (
         <input
           value={title}
-          onBlur={() => setIsEditing(false)}
+          onChange={onTitleChange}
+          onBlur={onTitleBlur}
           className="text-sm border-b border-gray-300 focus:outline-none"
           autoFocus
         />

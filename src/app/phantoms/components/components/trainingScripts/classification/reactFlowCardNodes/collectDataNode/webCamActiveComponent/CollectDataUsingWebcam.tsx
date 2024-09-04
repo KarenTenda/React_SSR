@@ -124,8 +124,8 @@ const CollectDataUsingWebcam = ({
     setSelectedCameraId(cameraId);
     setImgSrc(`${Urls.fetchPhantomCamera}/${cameraId}/stream`);
 
-    setCrop(undefined);
-    setCompletedCrop(undefined);
+    // setCrop(undefined);
+    // setCompletedCrop(undefined);
   };
 
   const handleDeleteImage = (index: number) => {
@@ -140,7 +140,6 @@ const CollectDataUsingWebcam = ({
     }
   }
 
-
   useEffect(() => {
     if (
       completedCrop?.width &&
@@ -150,22 +149,22 @@ const CollectDataUsingWebcam = ({
     ) {
       const canvas = previewCanvasRef.current;
       const ctx = canvas.getContext('2d');
-  
+
       if (!ctx) return;
-  
+
       const { naturalWidth, naturalHeight } = imgRef.current;
       const { width, height } = imgRef.current.getBoundingClientRect();
-  
+
       // Calculate scale based on actual image dimensions on screen
       const scaleX = naturalWidth / width;
       const scaleY = naturalHeight / height;
-  
+
       // Set canvas dimensions based on scaled crop
       canvas.width = completedCrop.width * scaleX;
       canvas.height = completedCrop.height * scaleY;
-  
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
       ctx.drawImage(
         imgRef.current,
         completedCrop.x * scaleX,
@@ -182,6 +181,7 @@ const CollectDataUsingWebcam = ({
 
   function startContinuousCapture() {
     setIsContinuousCapture(true);
+
     setTimeout(() => {
       intervalRef.current = setInterval(() => {
         captureCroppedImage();
@@ -191,6 +191,7 @@ const CollectDataUsingWebcam = ({
 
   function stopContinuousCapture() {
     setIsContinuousCapture(false);
+
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -198,54 +199,103 @@ const CollectDataUsingWebcam = ({
   }
 
   function captureCroppedImage() {
-    if (!imgRef.current) {
-      return;
+    if (!completedCrop || !imgRef.current) {
+        return;
     }
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+
+    // Calculate scaling factors based on natural and rendered dimensions
     const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
     const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
 
-    if (completedCrop) {
-      canvas.width = completedCrop.width * scaleX;
-      canvas.height = completedCrop.height * scaleY;
+    // Round crop dimensions to avoid fractional pixels
+    const cropX = Math.round(completedCrop.x * scaleX);
+    const cropY = Math.round(completedCrop.y * scaleY);
+    const cropWidth = Math.round(completedCrop.width * scaleX);
+    const cropHeight = Math.round(completedCrop.height * scaleY);
 
+    // Set canvas dimensions to match the scaled crop area
+    canvas.width = imgRef.current.width;
+    canvas.height = imgRef.current.height;
+
+    console.log('Canvas size:', canvas.width, canvas.height);
+    console.log('Crop dimensions:', completedCrop);
+    console.log('Rendered image dimensions:', imgRef.current.width, imgRef.current.height);
+    console.log('Scale factors:', scaleX, scaleY);
+
+    if (ctx) {
       imgRef.current.crossOrigin = "anonymous";
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx?.drawImage(
-        imgRef.current,
-        completedCrop.x * scaleX,
-        completedCrop.y * scaleY,
-        completedCrop.width * scaleX,
-        completedCrop.height * scaleY,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-    } else {
-      canvas.width = imgRef.current.naturalWidth;
-      canvas.height = imgRef.current.naturalHeight;
+        ctx.drawImage(
+            imgRef.current,
+            cropX,
+            cropY,
+            cropWidth,
+            cropHeight,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
 
-      imgRef.current.crossOrigin = "anonymous";
-
-      ctx?.drawImage(
-        imgRef.current,
-        0,
-        0,
-        imgRef.current.naturalWidth,
-        imgRef.current.naturalHeight,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+        // Convert the canvas to an image URL
+        const imageUrl = canvas.toDataURL('image/jpeg');
+        setImages((prevImages) => [...prevImages, imageUrl]);
     }
+}
 
-    const imageUrl = canvas.toDataURL('image/jpeg');
-    setImages((prevImages) => [...prevImages, imageUrl]);
-  }
+  // function captureCroppedImage() {
+  //   if (!imgRef.current) {
+  //     return;
+  //   }
+
+  //   const canvas = document.createElement('canvas');
+  //   const ctx = canvas.getContext('2d');
+  //   const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
+  //   const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
+
+  //   if (completedCrop) {
+  //     canvas.width = completedCrop.width * scaleX;
+  //     canvas.height = completedCrop.height * scaleY;
+
+  //     imgRef.current.crossOrigin = "anonymous";
+
+  //     ctx?.drawImage(
+  //       imgRef.current,
+  //       completedCrop.x * scaleX,
+  //       completedCrop.y * scaleY,
+  //       completedCrop.width * scaleX,
+  //       completedCrop.height * scaleY,
+  //       0,
+  //       0,
+  //       canvas.width,
+  //       canvas.height
+  //     );
+  //   } else {
+  //     canvas.width = imgRef.current.naturalWidth;
+  //     canvas.height = imgRef.current.naturalHeight;
+
+  //     imgRef.current.crossOrigin = "anonymous";
+
+  //     ctx?.drawImage(
+  //       imgRef.current,
+  //       0,
+  //       0,
+  //       imgRef.current.naturalWidth,
+  //       imgRef.current.naturalHeight,
+  //       0,
+  //       0,
+  //       canvas.width,
+  //       canvas.height
+  //     );
+  //   }
+
+  //   const imageUrl = canvas.toDataURL('image/jpeg');
+  //   setImages((prevImages) => [...prevImages, imageUrl]);
+  // }
 
   return (
     <>
@@ -368,22 +418,28 @@ const CollectDataUsingWebcam = ({
           <>
             <div className="grid grid-cols-4 gap-1 mt-2 max-h-[220px] overflow-y-auto">
               {images.map((image, index) => (
-                <div key={index} className="relative ">
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`Captured ${index}`}
-                    className="border border-gray-300"
-                  />
-                  <Button
-                    onClick={() => handleDeleteImage(index)}
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-0 left-0 bg-transparent text-[#FA8072] rounded-full p-1 w-4 h-4 flex items-center justify-center"
-                  >
-                    <DeleteIcon />
-                  </Button>
-                </div>
+                <img
+                key={index}
+                src={image}
+                alt={`Captured ${index}`}
+                className="border border-gray-300"
+              />
+                // <div key={index} className="relative ">
+                //   <img
+                //     key={index}
+                //     src={image}
+                //     alt={`Captured ${index}`}
+                //     className="border border-gray-300"
+                //   />
+                //   <Button
+                //     onClick={() => handleDeleteImage(index)}
+                //     variant="ghost"
+                //     size="sm"
+                //     className="absolute top-0 left-0 bg-transparent text-[#FA8072] rounded-full p-1 w-4 h-4 flex items-center justify-center"
+                //   >
+                //     <DeleteIcon />
+                //   </Button>
+                // </div>
               ))}
             </div>
           </>

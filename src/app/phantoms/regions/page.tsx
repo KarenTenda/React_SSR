@@ -218,9 +218,7 @@ export default function ModelPage() {
     canvas.width = completedCrop.width * scaleX;
     canvas.height = completedCrop.height * scaleY;
     const ctx = canvas.getContext('2d');
-
     
-
     if (ctx) {
       imgRef.current.crossOrigin = "anonymous";
       ctx.drawImage(

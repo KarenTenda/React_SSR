@@ -78,6 +78,8 @@ function ClassNode({ data }: any) {
           onEditClick={handleEditClick}
           isEditing={isEditingCardName}
           setIsEditing={setIsEditingCardName}
+          onTitleChange={handleTitleChange}
+          onTitleBlur={handleTitleBlur}
         />
 
         <div className="border-t border-gray-300" />
@@ -225,27 +227,8 @@ function Flow() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
-  const nodeTypes = useMemo(() => ({
-    classNode: ClassNode,
-    trainingNode: TrainingNode,
-    previewNode: PreviewNode,
-    addClassNode: (props: any) => <AddClassNode {...props} onAddClass={addClassNode} />
-  }), []);
-
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    [setNodes],
-  );
-  const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges],
-  );
-  const onConnect: OnConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges],
-  );
-
-  const addClassNode = () => {
+  // Function to add a new class node
+  const addClassNode = useCallback(() => {
     const newId = `${nodes.length + 1}`;
     setNodes((nds) => [
       ...nds,
@@ -260,7 +243,32 @@ function Flow() {
       ...eds,
       { id: `e${newId}-training`, source: newId, target: 'training' },
     ]);
-  };
+  }, [nodes, edges]);
+
+  const nodeTypes = useMemo(
+    () => ({
+      classNode: ClassNode,
+      trainingNode: TrainingNode,
+      previewNode: PreviewNode,
+      addClassNode: (props: any) => <AddClassNode {...props} onAddClass={addClassNode} />
+    }),
+    [addClassNode] // Include `addClassNode` in the dependency array
+  );
+
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    []
+  );
+
+  const onEdgesChange: OnEdgesChange = useCallback(
+    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    []
+  );
+
+  const onConnect: OnConnect = useCallback(
+    (connection) => setEdges((eds) => addEdge(connection, eds)),
+    []
+  );
 
   return (
     <div className='h-[100%] w-full'>
