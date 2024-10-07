@@ -1,4 +1,4 @@
-import Urls from "@/constants/Urls";
+import Urls from "@/lib/constants/Urls";
 import Image from "next/image";
 
 const HomePage = () => {

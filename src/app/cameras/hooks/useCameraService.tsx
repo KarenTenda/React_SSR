@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { CameraStructure } from '../structure/CameraStructure';
 import { CameraService } from '../services/CameraService';
-import Urls from '@/constants/Urls';
+import Urls from '@/lib/constants/Urls';
 import { useToast } from '@/components/ui/use-toast';
 // import { useError } from '@/components/errorProvider/ErrorProvider';
 

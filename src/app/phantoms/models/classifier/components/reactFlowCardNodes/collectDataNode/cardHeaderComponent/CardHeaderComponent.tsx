@@ -1,8 +1,7 @@
 import React from 'react';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PencilIcon, DotsVerticalIcon } from '../../../../../../../../../../public/assets/Icons';
-import { on } from 'events';
+import { PencilIcon, DotsVerticalIcon } from '../../../../../../../../../public/assets/Icons';
 
 interface CardHeaderComponentProps {
     title: string;

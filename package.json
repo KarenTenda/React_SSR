@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
+    "@monaco-editor/react": "^4.6.0",
     "@next/bundle-analyzer": "^14.2.5",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-checkbox": "^1.1.1",
@@ -24,13 +25,16 @@
     "@radix-ui/react-switch": "^1.1.0",
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
+    "@tanstack/react-table": "^8.20.5",
     "@xyflow/react": "^12.0.4",
     "axios": "^1.7.3",
+    "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cross-env": "^7.0.3",
     "i18next": "^23.12.2",
     "lucide-react": "^0.331.0",
+    "mongoose": "^8.6.3",
     "next": "^14.2.5",
     "next-themes": "^0.3.0",
     "react": "^18",
@@ -47,6 +51,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

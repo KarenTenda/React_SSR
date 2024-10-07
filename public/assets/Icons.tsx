@@ -43,7 +43,8 @@ import {
   Gamepad2,
   Film,
   ClipboardList,
-  LayoutList
+  LayoutList,
+  Workflow
 } from 'lucide-react';
 
 export {
@@ -89,5 +90,6 @@ export {
   Crop as CropIcon,
   Gamepad2 as ControlsIcon,
   Film as StreamsIcon,
-  LayoutList as JobsIcon
+  LayoutList as JobsIcon,
+  Workflow as WorkflowIcon
 };

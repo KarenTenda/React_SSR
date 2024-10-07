@@ -3,9 +3,9 @@
 import React, { useState, useRef, useCallback, useEffect, DependencyList } from 'react'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { CropIcon, DeleteIcon, SettingsIcon } from '../../../../../../../../../../public/assets/Icons';
+import { CropIcon, DeleteIcon, SettingsIcon } from '../../../../../../../../../public/assets/Icons';
 import ClickableIconButton from '@/components/custom/buttons/ClickableIconButton';
-import Urls from '@/constants/Urls';
+import Urls from '@/lib/constants/Urls';
 import { Loader2 } from 'lucide-react';
 import ReactCrop, {
   centerCrop,

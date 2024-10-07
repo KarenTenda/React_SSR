@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 // Dynamically import Sidebar and ThemeProvider components
 const Sidebar = dynamic(() => import("@/components/sidebar"), { ssr: false });
-const ThemeProvider = dynamic(() => import("@/components/provider/themeProvider/ThemeProvider").then((mod) => mod.ThemeProvider), { ssr: false });
+const ThemeProvider = dynamic(() => import("@/providers/themeProvider/ThemeProvider").then((mod) => mod.ThemeProvider), { ssr: false });
 
 // Uncomment this if you need metadata
 // export const metadata: Metadata = {

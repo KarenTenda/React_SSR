@@ -12,7 +12,7 @@ export {
   DeleteIcon,
   InfoIcon,
   DotsVerticalIcon
-} from '../../../../../../../public/assets/Icons';
+} from '../../../../../../public/assets/Icons';
 
 export { Button } from '@/components/ui/button';
 
@@ -25,4 +25,4 @@ export { default as ClickableIconButton } from '@/components/custom/buttons/Clic
 
 // Exporting hooks and constants
 export { default as useCameraService } from '@/app/cameras/hooks/useCameraService';
-export { default as Urls } from '@/constants/Urls';
+export { default as Urls } from '@/lib/constants/Urls';

@@ -2,7 +2,7 @@ import React, {useRef,useState, useEffect} from 'react'
 // import { CameraStructure } from '../../structure/CameraStructure'
 import { CameraSettings } from '../../schemas/CameraSettingsSchemas'
 import CameraSettingsModal from '@/components/custom/modals/CameraSettingsModal'
-import CameraCard from '@/components/custom/cards/CameraCard'
+import CameraCard from '@/app/cameras/components/cameraCard/CameraCard'
 import useCameraOperations from '../../hooks/useCameraOperations'
 
 const CameraGrid = ({ cameras }: { cameras: CameraSettings[] }) => {

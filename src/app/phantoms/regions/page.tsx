@@ -1,6 +1,6 @@
 "use client";
 import { Button } from '@/components/ui/button';
-import Urls from '@/constants/Urls';
+import Urls from '@/lib/constants/Urls';
 import { CropIcon, Loader2 } from 'lucide-react';
 import React, { useState, useRef, useEffect, DependencyList } from 'react'
 
@@ -13,7 +13,7 @@ import ReactCrop, {
 } from 'react-image-crop'
 
 import 'react-image-crop/dist/ReactCrop.css'
-import { DeleteIcon } from '../components/components/trainingScripts/classification';
+import { DeleteIcon } from '../models/classifier/components';
 
 export function useDebounceEffect(
   fn: () => void,
@@ -218,7 +218,7 @@ export default function ModelPage() {
     canvas.width = completedCrop.width * scaleX;
     canvas.height = completedCrop.height * scaleY;
     const ctx = canvas.getContext('2d');
-    
+
     if (ctx) {
       imgRef.current.crossOrigin = "anonymous";
       ctx.drawImage(

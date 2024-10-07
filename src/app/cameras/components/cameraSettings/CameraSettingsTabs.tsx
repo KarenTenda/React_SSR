@@ -18,7 +18,7 @@ import {
 import CameraBasicSettingsForm from "./cameraBasicSettings/BasicSettingsForm"
 import { CameraSettings } from "../../schemas/CameraSettingsSchemas"
 
-export function CamerASettingsTab({ camera }: { camera: CameraSettings }) {
+export function CameraSettingsTab({ camera }: { camera: CameraSettings | null }) {
   return (
     <Tabs defaultValue="basic" className="w-auto">
       <TabsList className="grid w-full grid-cols-2">
