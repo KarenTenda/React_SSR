@@ -6,12 +6,13 @@ import "./globals.css";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
+import ModalProvider from "@/providers/modal-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
 // Dynamically import Sidebar and ThemeProvider components
 const Sidebar = dynamic(() => import("@/components/sidebar"), { ssr: false });
-const ThemeProvider = dynamic(() => import("@/providers/themeProvider/ThemeProvider").then((mod) => mod.ThemeProvider), { ssr: false });
+const ThemeProvider = dynamic(() => import("@/providers/theme-provider").then((mod) => mod.ThemeProvider), { ssr: false });
 
 // Uncomment this if you need metadata
 // export const metadata: Metadata = {
@@ -48,7 +49,10 @@ export default function RootLayout({
               className={`flex flex-col w-full h-full transition-all duration-300 ${isCollapsed ? "ml-20" : "ml-64"
                 } p-4`}
             >
-              {children}
+              <ModalProvider>
+                {children}
+              </ModalProvider>
+              {/* {children} */}
             </div>
             <Toaster />
           </div>

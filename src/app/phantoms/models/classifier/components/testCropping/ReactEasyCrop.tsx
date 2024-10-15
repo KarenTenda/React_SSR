@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Cropper from "react-easy-crop";
-import Urls from "@/lib/constants/Urls";
+import Urls from "@/lib/Urls";
 
 const CROP_AREA_ASPECT = 3 / 2;
 

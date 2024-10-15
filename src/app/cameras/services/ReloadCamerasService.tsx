@@ -1,4 +1,4 @@
-import Urls from '@/lib/constants/Urls';
+import Urls from '@/lib/Urls';
 import axios from 'axios';
 
 export const ReloadCamerasService = async (): Promise<void> => {

@@ -1,6 +1,6 @@
 "use client";
 import { Button } from '@/components/ui/button';
-import Urls from '@/lib/constants/Urls';
+import Urls from '@/lib/Urls';
 import { CropIcon, Loader2 } from 'lucide-react';
 import React, { useState, useRef, useEffect, DependencyList } from 'react'
 

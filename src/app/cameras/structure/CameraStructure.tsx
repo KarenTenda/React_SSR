@@ -156,4 +156,6 @@ export class CameraStructure {
         this.calibration_id = calibration_id;
         this.streams = streams;
     }
+
+    
 }

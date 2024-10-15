@@ -25,4 +25,4 @@ export { default as ClickableIconButton } from '@/components/custom/buttons/Clic
 
 // Exporting hooks and constants
 export { default as useCameraService } from '@/app/cameras/hooks/useCameraService';
-export { default as Urls } from '@/lib/constants/Urls';
+export { default as Urls } from '@/lib/Urls';

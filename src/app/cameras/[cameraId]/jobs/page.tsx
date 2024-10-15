@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { ScheduledTask } from "../../schemas/ScheduledTasksModel";
 import axios from "axios";
-import Urls from "@/lib/constants/Urls";
+import Urls from "@/lib/Urls";
 import { BackIcon, SaveIcon } from "@/public/assets/Icons";
 import { Card, CardContent, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Textarea } from "@/components/ui/textarea";

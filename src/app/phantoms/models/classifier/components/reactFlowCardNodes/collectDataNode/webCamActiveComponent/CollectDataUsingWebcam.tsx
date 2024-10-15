@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLab
 import { Button } from '@/components/ui/button';
 import { CropIcon, DeleteIcon, SettingsIcon } from '../../../../../../../../../public/assets/Icons';
 import ClickableIconButton from '@/components/custom/buttons/ClickableIconButton';
-import Urls from '@/lib/constants/Urls';
+import Urls from '@/lib/Urls';
 import { Loader2 } from 'lucide-react';
 import ReactCrop, {
   centerCrop,

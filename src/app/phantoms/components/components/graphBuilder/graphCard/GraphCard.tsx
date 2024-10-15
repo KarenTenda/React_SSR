@@ -1,7 +1,7 @@
 import React from 'react'
 import { Card, CardContent, CardTitle, CardDescription, CardImg } from '@/components/ui/card'
 import { WorkflowIcon, DeleteIcon } from '@/public/assets/Icons'
-import Urls from '@/lib/constants/Urls'
+import Urls from '@/lib/Urls'
 import { useRouter } from 'next/navigation'
 import ClickableIconButton from '@/components/custom/buttons/ClickableIconButton'
 

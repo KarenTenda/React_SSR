@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CameraSettingsSchema, CameraSettings } from "@/app/cameras/schemas/CameraSettingsSchemas";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
-import Urls from "@/lib/constants/Urls";
+import Urls from "@/lib/Urls";
 // import { CameraStructure } from "@/app/cameras/structure/CameraStructure";
 
 const CameraBasicSettingsForm = ({ camera }: { camera: CameraSettings | null }) => {
