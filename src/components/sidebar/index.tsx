@@ -44,8 +44,12 @@ const items: ISidebarItem[] = [
     icon: PhantomsIcon,
     items: [
       {
-        name: "Components",
-        path: "/phantoms/components",
+        name: "Tasks",
+        path: "/phantoms/tasks",
+      },
+      {
+        name: "Workflows",
+        path: "/phantoms/workflows",
       },
       {
         name: "Models",

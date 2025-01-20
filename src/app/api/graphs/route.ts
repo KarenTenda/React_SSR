@@ -1,6 +1,6 @@
 
 import dbConnect from '@/lib/mongo';
-import Graph from '@/app/phantoms/components/schemas/GraphMongooseSchema';
+import Graph from '@/app/phantoms/workflows/schemas/GraphMongooseSchema';
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 

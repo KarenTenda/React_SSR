@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Dispatch, createContext, useContext } from 'react'
-import { EditorNodeType, EditorActions, EditorEdgeType } from '@/app/phantoms/components/types/EditorCanvasTypes';
+import { EditorNodeType, EditorActions, EditorEdgeType } from '@/app/phantoms/workflows/types/EditorCanvasTypes';
 
 export type EditorNode = EditorNodeType
 export type EditorNodeEdge = EditorEdgeType
@@ -70,6 +70,7 @@ const editorReducer = (state: EditorState = initialState, action: EditorActions)
                 },
             }
         case 'SELECTED_ELEMENT':
+            console.log('Selected Element:', action.payload.element);
             return {
                 ...state,
                 editor: {
@@ -77,14 +78,21 @@ const editorReducer = (state: EditorState = initialState, action: EditorActions)
                     selectedNode: action.payload.element,
                 },
             }
-        case 'UPDATE_NODE':
+        case 'UPDATE_NODE': {
+            const updatedElements = action.payload.elements;
+            const updatedSelectedNode = updatedElements.find(
+                (node) => node.id === state.editor.selectedNode?.id
+            );
+        
             return {
                 ...state,
                 editor: {
                     ...state.editor,
-                    elements: action.payload.elements,
+                    elements: updatedElements,
+                    selectedNode: updatedSelectedNode || state.editor.selectedNode,
                 },
-            }
+            };
+        } 
         case 'SELECTED_HANDLE': {
             const { nodeId, element } = action.payload;
 
@@ -111,39 +119,6 @@ const editorReducer = (state: EditorState = initialState, action: EditorActions)
 
             return state;
         }
-        // case 'UPDATE_HANDLE_DATATYPE': {
-        //     const { handleId, datatype } = action.payload;
-
-        //     const updatedInputHandles = state.editor.selectedNode.data.metadata.inputHandles?.map((handle) =>
-        //         handle.id === handleId
-        //             ? { ...handle, datatype }
-        //             : handle
-        //     ) || [];
-
-        //     const updatedOutputHandles = state.editor.selectedNode.data.metadata.outputHandles?.map((handle) =>
-        //         handle.id === handleId
-        //             ? { ...handle, datatype }
-        //             : handle
-        //     ) || [];
-
-        //     return {
-        //         ...state,
-        //         editor: {
-        //             ...state.editor,
-        //             selectedNode: {
-        //                 ...state.editor.selectedNode,
-        //                 data: {
-        //                     ...state.editor.selectedNode.data,
-        //                     metadata: {
-        //                         ...state.editor.selectedNode.data.metadata,
-        //                         inputHandles: updatedInputHandles,
-        //                         outputHandles: updatedOutputHandles,
-        //                     },
-        //                 },
-        //             },
-        //         },
-        //     };
-        // }
         case 'UPDATE_NODE_HANDLES': {
             const { nodeId, inputHandles, outputHandles } = action.payload;
             const updatedElements = state.editor.elements.map((node) => {
@@ -186,6 +161,7 @@ const editorReducer = (state: EditorState = initialState, action: EditorActions)
                 return redoState
             }
             return state
+
         case 'UNDO':
             if (state.history.currentIndex > 0) {
                 const prevIndex = state.history.currentIndex - 1
@@ -225,7 +201,7 @@ type EditorProviderProps = {
 
 const EditorProvider = (props: EditorProviderProps) => {
     const [state, dispatch] = React.useReducer(editorReducer, initialState)
-    
+
     return (
         <EditorContext.Provider value={{ state, dispatch }}>
             {props.children}

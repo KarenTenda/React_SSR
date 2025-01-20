@@ -1,7 +1,6 @@
 import React, {useRef,useState, useEffect} from 'react'
-// import { CameraStructure } from '../../structure/CameraStructure'
 import { CameraSettings } from '../../schemas/CameraSettingsSchemas'
-import CameraSettingsModal from '@/components/custom/modals/CameraSettingsModal'
+import CameraSettingsModal from '@/app/cameras/components/cameraSettings/CameraSettingsModal'
 import CameraCard from '@/app/cameras/components/cameraCard/CameraCard'
 import useCameraOperations from '../../hooks/useCameraOperations'
 

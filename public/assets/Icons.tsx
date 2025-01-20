@@ -44,7 +44,9 @@ import {
   Film,
   ClipboardList,
   LayoutList,
-  Workflow
+  Workflow,
+  ArrowUpNarrowWide,
+  ArrowDownNarrowWide
 } from 'lucide-react';
 
 export {
@@ -91,5 +93,7 @@ export {
   Gamepad2 as ControlsIcon,
   Film as StreamsIcon,
   LayoutList as JobsIcon,
-  Workflow as WorkflowIcon
+  Workflow as WorkflowIcon,
+  ArrowDownNarrowWide as descendingIcon,
+  ArrowUpNarrowWide as ascendingIcon,
 };

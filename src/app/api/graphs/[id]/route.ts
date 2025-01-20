@@ -1,5 +1,5 @@
 import dbConnect from "@/lib/mongo";
-import Graph from '@/app/phantoms/components/schemas/GraphMongooseSchema';
+import Graph from '@/app/phantoms/workflows/schemas/GraphMongooseSchema';
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {

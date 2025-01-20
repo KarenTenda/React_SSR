@@ -1,38 +1,54 @@
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs"
-import CameraBasicSettingsForm from "./cameraBasicSettings/BasicSettingsForm"
-import { CameraSettings } from "../../schemas/CameraSettingsSchemas"
+} from "@/components/ui/tabs";
+import CameraBasicSettingsForm from "./cameraBasicSettings/BasicSettingsForm";
+import { CameraSettings } from "../../schemas/CameraSettingsSchemas";
+import { useState } from "react";
 
 export function CameraSettingsTab({ camera }: { camera: CameraSettings | null }) {
+  const [activeTab, setActiveTab] = useState("basic");
+
   return (
-    <Tabs defaultValue="basic" className="w-auto">
-      <TabsList className="grid w-full grid-cols-2">
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => setActiveTab(value)}
+      className="w-auto"
+    >
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="basic">Basic</TabsTrigger>
         <TabsTrigger value="calibration">Calibration</TabsTrigger>
+        <TabsTrigger value="advanced">Advanced</TabsTrigger>
       </TabsList>
-      <TabsContent value="basic">
-        <CameraBasicSettingsForm
-            camera={camera}
-        />
-      </TabsContent>
-      <TabsContent value="calibration">
 
-      </TabsContent>
+      <div className="h-[550px]">
+        <TabsContent
+          value="basic"
+          className={`h-full flex items-center justify-center ${
+            activeTab === "basic" ? "block" : "hidden"
+          }`}
+        >
+          <CameraBasicSettingsForm camera={camera} />
+        </TabsContent>
+        <TabsContent
+          value="calibration"
+          className={`h-full flex items-center justify-center ${
+            activeTab === "calibration" ? "block" : "hidden"
+          }`}
+        >
+          <p className="text-gray-500">Calibration settings are under development.</p>
+        </TabsContent>
+        <TabsContent
+          value="advanced"
+          className={`h-full flex items-center justify-center ${
+            activeTab === "advanced" ? "block" : "hidden"
+          }`}
+        >
+          <p className="text-gray-500">Advanced settings are under development.</p>
+        </TabsContent>
+      </div>
     </Tabs>
-  )
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 import { Button } from '@/components/ui/button';
 import Urls from '@/lib/Urls';
-import { CropIcon, Loader2 } from 'lucide-react';
+import { CropIcon, Loader2, PauseIcon, PlayIcon, RefreshCcw, SettingsIcon, StopCircleIcon } from 'lucide-react';
 import React, { useState, useRef, useEffect, DependencyList } from 'react'
 
 import ReactCrop, {
@@ -12,8 +12,21 @@ import ReactCrop, {
   convertToPixelCrop,
 } from 'react-image-crop'
 
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import 'react-image-crop/dist/ReactCrop.css'
-import { DeleteIcon } from '../models/classifier/components';
+import { axios, DeleteIcon, uuidv4 } from '../models/classifier/components';
+import { Switch } from '@/components/ui/switch';
+import { RegionService } from './services/RegionService';
+import useRegionService from './hooks/useRegions';
+import { RegionStructure, Resolution } from './structures/RegionStructure';
 
 export function useDebounceEffect(
   fn: () => void,
@@ -107,19 +120,31 @@ function centerAspectCrop(
 }
 
 export default function ModelPage() {
-  const [imgSrc, setImgSrc] = useState(`${Urls.fetchPhantomCamera}/tray_4_camera/stream`)
+  const [imgSrc, setImgSrc] = useState(`${Urls.fetchPhantomCamera}/Camera1/stream`)
+  const [regions, regionIDs] = useRegionService()
+
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
+
   const [crop, setCrop] = useState<Crop>()
+  const [region, setRegion] = useState<RegionStructure | null>(null)
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>()
+  const [croppedImageSrc, setCroppedImageSrc] = useState<string | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
   const [scale, setScale] = useState(1)
   const [rotate, setRotate] = useState(0)
-  // const [aspect, setAspect] = useState<number | undefined>(16 / 9)
   const aspect = 1;
-  const [isCropping, setIsCropping] = useState(false);
+
   const [isCapturing, setIsCapturing] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [fps, setFps] = useState(20);
+  const [holdToRecord, setHoldToRecord] = useState(true);
+  const [delay, setDelay] = useState(2);
+  const [duration, setDuration] = useState(6);
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     if (aspect) {
@@ -156,22 +181,18 @@ export default function ModelPage() {
       imgRef.current &&
       previewCanvasRef.current
     ) {
-      console.log('completedCrop', completedCrop)
-      console.log("imgRef.current", imgRef.current)
-      console.log("previewCanvasRef.current", previewCanvasRef.current)
       const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
       const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-  
-      // Adjust the canvas size directly based on the scaled crop size
+
       previewCanvasRef.current.width = completedCrop.width * scaleX;
       previewCanvasRef.current.height = completedCrop.height * scaleY;
-  
+
       const ctx = previewCanvasRef.current.getContext('2d');
-  
+
       if (ctx) {
+        imgRef.current.crossOrigin = "anonymous";
         ctx.clearRect(0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
-  
-        // Draw the image based on the computed crop coordinates and scaling
+
         ctx.drawImage(
           imgRef.current,
           completedCrop.x * scaleX,
@@ -183,6 +204,10 @@ export default function ModelPage() {
           previewCanvasRef.current.width,
           previewCanvasRef.current.height
         );
+
+        // Convert the cropped canvas to an image data URL
+        const croppedUrl = previewCanvasRef.current.toDataURL('image/jpeg');
+        // setCroppedImageSrc(croppedUrl);
       }
     }
   }, [completedCrop, scale, rotate]);
@@ -195,7 +220,7 @@ export default function ModelPage() {
     setIsCapturing(true);
     intervalRef.current = setInterval(() => {
       captureCroppedImage();
-    }, 200); // Capture every second
+    }, 1000); // Capture every second
   }
 
   function stopContinuousCapture() {
@@ -241,72 +266,208 @@ export default function ModelPage() {
     }
   }
 
+  const handleDoneCropping = () => {
+    if (!completedCrop || !imgRef.current) {
+      console.log('No crop completed or image reference missing.');
+      return;
+    }
+
+    const { x, y, width, height } = completedCrop;
+
+    // Camera settings
+    const cameraSettings = {
+      resolution: [1280, 720],
+      centre_crop: true, // Replace with the actual camera setting
+    };
+
+    const [refWidth, refHeight] = cameraSettings.resolution;
+
+    let cropStartX = 0;
+    let cropStartY = 0;
+    let croppedWidth = refWidth;
+    let croppedHeight = refHeight;
+
+    // Adjust for centre_crop
+    if (cameraSettings.centre_crop) {
+      const cropAspectRatio = refWidth / refHeight;
+      if (cropAspectRatio > 1) {
+        // Landscape: cropped height stays the same
+        croppedWidth = croppedHeight * cropAspectRatio;
+        cropStartX = (refWidth - croppedWidth) / 2;
+      } else {
+        // Portrait: cropped width stays the same
+        croppedHeight = croppedWidth / cropAspectRatio;
+        cropStartY = (refHeight - croppedHeight) / 2;
+      }
+    }
+
+    // Normalize dimensions to the reference resolution
+    const normalizedX = Math.round(((x + cropStartX) / imgRef.current.width) * refWidth);
+    const normalizedY = Math.round(((y + cropStartY) / imgRef.current.height) * refHeight);
+    const normalizedSide = Math.round(
+      (Math.min(width, height) / imgRef.current.width) * croppedWidth
+    );
+
+    const referenceResolution: Resolution = [refWidth, refHeight];
+
+    const region = {
+      id: 'cropped_region',
+      type: 'imashape',
+      enabled: true,
+      reference_resolution: referenceResolution,
+      shape: {
+        shape: {
+          geometry_type: 3, // Square
+          center: {
+            geometry_type: 8, // Center point
+            x: normalizedX + Math.round(normalizedSide / 2), // Center X
+            y: normalizedY + Math.round(normalizedSide / 2), // Center Y
+          },
+          side: normalizedSide,
+        },
+      },
+    };
+
+    console.log('Region Dimensions:', region);
+    setRegion(region);
+
+  };
+
+  useEffect(() => {
+    const updateRegion = async () => {
+      if (region && !regionIDs.includes(region.id)) {
+        await axios.post(`${Urls.fetchRegions}`, region);
+      } else {
+        await axios.put(`${Urls.fetchRegions}/${region?.id}`, region);
+      }
+    };
+
+    updateRegion();
+    setCroppedImageSrc(`${Urls.fetchPhantomCamera}/Camera1/region/${region?.id}/stream`);
+
+  }, [region]);
+
+  const handleStart = (isHolding = false) => {
+    if (holdToRecord) {
+      // "Hold to Record" is ON
+      if (isHolding) {
+        console.log('Hold to Record: Capturing started while holding the button.');
+        const interval = 1000 / fps; // Calculate interval based on FPS
+
+        intervalRef.current = setInterval(() => {
+          // Simulate capturing an image
+          const fakeImage = `Captured Image at ${new Date().toISOString()}`;
+          setCapturedImages((prev) => [...prev, fakeImage]);
+
+          console.log(`Captured Image: ${fakeImage}`);
+        }, interval);
+      } else {
+        // Stop capturing when button is released
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          console.log('Hold to Record: Capturing stopped after releasing the button.');
+        }
+      }
+    } else {
+      // "Hold to Record" is OFF
+      if (isCapturing) {
+        console.log('Already capturing, ignoring start request.');
+        return; // Avoid starting multiple intervals
+      }
+
+      console.log('Starting capture with settings:', { fps, delay, duration });
+      setIsCapturing(true); // Set capturing to true
+      setCapturedImages([]); // Clear captured images
+
+      const interval = 1000 / fps; // Calculate interval based on FPS
+      let timeElapsed = 0;
+
+      intervalRef.current = setInterval(() => {
+        if (timeElapsed >= duration * 1000) {
+          handleStop(); // Automatically stop after duration
+          return;
+        }
+
+        // Simulate capturing an image
+        const fakeImage = `Captured Image at ${new Date().toISOString()}`;
+        setCapturedImages((prev) => [...prev, fakeImage]);
+
+        console.log(`Captured Image: ${fakeImage}`);
+        timeElapsed += interval;
+      }, interval);
+    }
+  };
+
+  const handlePause = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      setIsPaused(true);
+      console.log('Capture paused.');
+    }
+  };
+
+  const handleResume = () => {
+    if (isPaused) {
+      console.log('Resuming capture...');
+      setIsPaused(false);
+
+      const interval = 1000 / fps; // Calculate interval based on FPS
+      intervalRef.current = setInterval(() => {
+        // Resume capturing images
+        const fakeImage = `Captured Image at ${new Date().toISOString()}`;
+        setCapturedImages((prev) => [...prev, fakeImage]);
+
+        console.log(`Captured Image: ${fakeImage}`);
+      }, interval);
+    }
+  };
+
+  const handleStop = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setIsCapturing(false);
+    setIsPaused(false);
+
+    console.log('Capture stopped.');
+  };
+
+  const handleRestart = () => {
+    handleStop();
+    setCapturedImages([]);
+    handleStart();
+    console.log('Capture restarted.');
+  };
+
+  useEffect(() => {
+    // Clean up interval on component unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
   const handleDeleteImage = (index: number) => {
     const newImages = capturedImages.filter((_, i) => i !== index);
     setCapturedImages(newImages);
   };
 
+  const handleSaveSettings = () => {
+    console.log('Settings saved:', { fps, holdToRecord, delay, duration });
+    setIsSettingsOpen(false);
+  };
+
   return (
     <div className="w-[300px] h-auto">
-      {/* <div className="Crop-Controls">
-        <div>
-          <label htmlFor="scale-input">Scale: </label>
-          <input
-            id="scale-input"
-            type="number"
-            step="0.1"
-            value={scale}
-            disabled={!imgSrc}
-            onChange={(e) => setScale(Number(e.target.value))}
-          />
-        </div>
-        <div>
-          <label htmlFor="rotate-input">Rotate: </label>
-          <input
-            id="rotate-input"
-            type="number"
-            value={rotate}
-            disabled={!imgSrc}
-            onChange={(e) =>
-              setRotate(Math.min(180, Math.max(-180, Number(e.target.value))))
-            }
-          />
-        </div>
-        <div>
-          <button onClick={handleToggleAspectClick}>
-            Toggle aspect {aspect ? 'off' : 'on'}
-          </button>
-        </div>
-        <div>
-          <Button onClick={handleToggleCroppingClick}>
-            {isCropping ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Cropping...
-              </>
-            ) : (
-              'Crop Image?'
-            )}
-          </Button>
-        </div>
-        <div>
-          <Button onClick={isCapturing ? stopContinuousCapture : startContinuousCapture}>
-            {isCapturing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Stop Capturing
-              </>
-            ) : (
-              'Start Continuous Capture'
-            )}
-          </Button>
-        </div>
-      </div> */}
-
       <div className="flex flex-row">
+
         <div className="flex flex-col w-full pb-3">
           {isCropping ? (
-            <>
+            // Display cropping tool
             <ReactCrop
               crop={crop}
               onChange={(_, percentCrop) => setCrop(percentCrop)}
@@ -317,64 +478,214 @@ export default function ModelPage() {
                 ref={imgRef}
                 alt="Crop me"
                 src={imgSrc}
-                style={{ transform: `scale(${scale}) rotate(${rotate}deg)` }}
+                crossOrigin="anonymous"
+                style={{ maxWidth: '100%' }}
                 onLoad={onImageLoad}
               />
             </ReactCrop>
-            <Button
-            className='text-sm'
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCropping(false)}
-          >
-            Done Cropping
-          </Button>
-            </>
+          ) : croppedImageSrc ? (
+            // Display cropped image
+            <img
+              src={croppedImageSrc}
+              alt="Cropped View"
+              className="border border-gray-300"
+            />
           ) : (
-           <>
-             <div className="relative ">
+            // Display original stream
             <img
               ref={imgRef}
-              alt="View"
+              alt="Stream"
               src={imgSrc}
+              crossOrigin="anonymous"
+              style={{ maxWidth: '100%' }}
               onLoad={onImageLoad}
             />
-            <Button
-              onClick={() => setIsCropping(true)}
-              variant="ghost"
-              size="sm"
-              className="absolute top-2 left-0 bg-transparent text-[#FA8072] rounded-full p-1 w-6 h-6 flex items-center justify-center"
-            >
-              <CropIcon />
-            </Button>
+          )}
 
+          <div className="flex flex-row justify-between items-center space-x-2 mt-2">
+            {isCropping ? (
+              <Button
+                className="text-sm"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  handleDoneCropping();
+                  setIsCropping(false);
+                }}
+              >
+                Done Cropping
+              </Button>
+            ) : (
+              <div className="flex justify-start space-x-4 mb-4">
+                <Button
+                  className="text-sm"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCropping(true)}
+                >
+                  <CropIcon className="mr-2" />
+                  Crop
+                </Button>
+                <Button
+                  className="text-sm"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsSettingsOpen(true)}
+                >
+                  <SettingsIcon className="mr-2" />
+                  Settings
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-row justify-between items-center space-x-2 ">
+          <div className="flex justify-start space-x-4 mb-4">
             <Button
-              className='text-sm'
+              className="text-sm"
               variant="outline"
               size="sm"
-              onClick={isCapturing ? stopContinuousCapture : startContinuousCapture}
+              onMouseDown={() => handleStart(true)} // Start capturing when the button is pressed
+              onMouseUp={() => handleStart(false)} // Stop capturing when the button is released
+              onMouseLeave={() => handleStart(false)} // Stop capturing if the mouse leaves the button
+              disabled={isCapturing && isPaused}
             >
-              {isCapturing ? "Stop " : "Start "}
+              {holdToRecord ? 'Hold to Record' : 'Start'}
             </Button>
+            {isPaused ? (
+              <Button
+                className="text-sm"
+                variant="outline"
+                size="sm"
+                onClick={handleResume}
+                disabled={!isPaused} // Disabled if not paused
+              >
+                <PlayIcon className="mr-2" />
+              </Button>
 
-            {/* <ClickableIconButton
-              Icon={SettingsIcon}
-              onClick={() => setIsWebcamSettingsActive(true)}
-              tooltipText='Edit'
+            ) : (
+              <Button
+                className="text-sm"
+                variant="outline"
+                size="sm"
+                onClick={handlePause}
+                disabled={!isCapturing || isPaused}
+              >
+                <PauseIcon className="mr-2" />
+              </Button>
+            )}
 
-            /> */}
+
+            <Button
+              className="text-sm"
+              variant="outline"
+              size="sm"
+              onClick={handleStop}
+              disabled={!isCapturing}
+            >
+              <StopCircleIcon className="mr-2" />
+            </Button>
+            <Button
+              className="text-sm"
+              variant="outline"
+              size="sm"
+              onClick={handleRestart}
+              disabled={!isCapturing}
+            >
+              <RefreshCcw className="mr-2" />
+            </Button>
           </div>
-           </>
+
+
+          {isSettingsOpen && (
+            <Drawer
+              open={isSettingsOpen}
+              onClose={() => setIsSettingsOpen(false)}
+            >
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle className="text-center">Settings</DrawerTitle>
+                  <DrawerDescription className="text-center flex flex-col items-center ">
+                    Capture settings
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="p-4">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">FPS:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={fps}
+                      onChange={(e) => setFps(Number(e.target.value))}
+                      className="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="mb-4 flex items-center">
+                    <label className="text-sm font-medium mr-2">Hold to Record:</label>
+                    <Switch
+                      checked={holdToRecord}
+                      onCheckedChange={(checked) => setHoldToRecord(checked)}
+                    />
+                    <span className="ml-2 text-sm">{holdToRecord ? 'ON' : 'OFF'}</span>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">Delay:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={delay}
+                      onChange={(e) => setDelay(Number(e.target.value))}
+                      disabled={holdToRecord}
+                      className={`w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${holdToRecord ? 'bg-gray-200 cursor-not-allowed' : ''
+                        }`}
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">Duration:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={duration}
+                      onChange={(e) => setDuration(Number(e.target.value))}
+                      disabled={holdToRecord}
+                      className={`w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${holdToRecord ? 'bg-gray-200 cursor-not-allowed' : ''
+                        }`}
+                    />
+                  </div>
+
+                  <div className="flex justify-end space-x-4">
+                    <Button variant="ghost" onClick={() => setIsSettingsOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveSettings}>Save Settings</Button>
+                  </div>
+                </div>
+                <DrawerFooter className="flex flex-col gap-4 bg-background border-t-[1px] border-t-muted">
+                  <DrawerClose>
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => setIsSettingsOpen(false)}
+                    >
+                      Close
+                    </Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+
           )}
         </div>
+
+        {/* Hidden canvas for processing the cropped image */}
+        <canvas ref={previewCanvasRef} style={{ display: 'none' }} />
 
         <div className="border-l border-gray-300 mx-1"></div>
 
         <div className="flex flex-col w-full pb-3">
-          {!!completedCrop && (
+          {/* {!!completedCrop && (
             <div>
               <canvas
                 ref={previewCanvasRef}
@@ -386,29 +697,29 @@ export default function ModelPage() {
                 }}
               />
             </div>
-          )}
+          )} */}
 
           <div className="ml-4">
             <h3>Captured Images:</h3>
             <div className="grid grid-cols-4 gap-1 mt-2 max-h-[200px] overflow-y-auto">
               {capturedImages.map((image, index) => (
                 <div key={index} className="relative ">
-                <img
-                  key={index}
-                  src={image}
-                  alt={`Captured ${index}`}
-                  className="border border-gray-300"
+                  <img
+                    key={index}
+                    src={image}
+                    alt={`Captured ${index}`}
+                    className="border border-gray-300"
                   // style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-                />
-                <Button
-                onClick={() => handleDeleteImage(index)}
-                variant="ghost"
-                size="sm"
-                className="absolute top-0 left-0 bg-transparent text-[#FA8072] rounded-full p-1 w-6 h-6 flex items-center justify-center"
-              >
-                <DeleteIcon />
-              </Button>
-              </div>
+                  />
+                  <Button
+                    onClick={() => handleDeleteImage(index)}
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-0 left-0 bg-transparent text-[#FA8072] rounded-full p-1 w-6 h-6 flex items-center justify-center"
+                  >
+                    <DeleteIcon />
+                  </Button>
+                </div>
               ))}
             </div>
           </div>

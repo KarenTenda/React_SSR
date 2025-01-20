@@ -20,7 +20,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/public/*": ["./public/*"],
-      "@/phantom_components/*": ["./src/app/phantoms/components/*"],
+      "@/phantom_components/*": ["src/app/phantoms/workflows/*"],
       "@/ui/*": ["./src/app/components/ui/*"],
     }
   },

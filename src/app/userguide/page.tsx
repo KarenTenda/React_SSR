@@ -1,7 +1,7 @@
 import React from "react";
 
-const Payment = () => {
+const UserGuide = () => {
   return <div>User Guide</div>;
 };
 
-export default Payment;
+export default UserGuide;

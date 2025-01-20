@@ -1,7 +1,6 @@
 "use client";
 
-import React, {useState, useEffect} from 'react'
-import { CameraStructure } from '../structure/CameraStructure'
+import {useState, useEffect} from 'react'
 import { CameraSettings } from '../schemas/CameraSettingsSchemas';
 
 const useCameraOperations = (initialCameras:CameraSettings[]) => {
@@ -21,7 +20,7 @@ const useCameraOperations = (initialCameras:CameraSettings[]) => {
     const handleClose = () => setShowModal(false);
 
     const deleteCamera = () => {
-            
+        console.log('deleteCamera');
     };
 
     return {
