@@ -7,8 +7,8 @@ export default function Loading() {
         src="/tube-spinner.svg"
         alt="loader"
         width={40}
-        height={3240}
-        className="animate-spin"
+        height={40}
+        className="animate-spin w-10 h-auto"
       />
       <div className="flex-center size-full h-screen gap-3 text-black">
         <h1>Loading...</h1>

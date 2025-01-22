@@ -266,18 +266,85 @@ export default function ModelPage() {
     }
   }
 
-  const handleDoneCropping = () => {
+  // const handleDoneCropping = () => {
+  //   if (!completedCrop || !imgRef.current) {
+  //     console.log('No crop completed or image reference missing.');
+  //     return;
+  //   }
+
+  //   const { x, y, width, height } = completedCrop;
+
+  //   // Camera settings
+  //   const cameraSettings = {
+  //     resolution: [1280, 720],
+  //     centre_crop: true, // Replace with the actual camera setting
+  //   };
+
+  //   const [refWidth, refHeight] = cameraSettings.resolution;
+
+  //   let cropStartX = 0;
+  //   let cropStartY = 0;
+  //   let croppedWidth = refWidth;
+  //   let croppedHeight = refHeight;
+
+  //   // Adjust for centre_crop
+  //   if (cameraSettings.centre_crop) {
+  //     const cropAspectRatio = refWidth / refHeight;
+  //     if (cropAspectRatio > 1) {
+  //       // Landscape: cropped height stays the same
+  //       croppedWidth = croppedHeight * cropAspectRatio;
+  //       cropStartX = (refWidth - croppedWidth) / 2;
+  //     } else {
+  //       // Portrait: cropped width stays the same
+  //       croppedHeight = croppedWidth / cropAspectRatio;
+  //       cropStartY = (refHeight - croppedHeight) / 2;
+  //     }
+  //   }
+
+  //   // Normalize dimensions to the reference resolution
+  //   const normalizedX = Math.round(((x + cropStartX) / imgRef.current.width) * refWidth);
+  //   const normalizedY = Math.round(((y + cropStartY) / imgRef.current.height) * refHeight);
+  //   const normalizedSide = Math.round(
+  //     (Math.min(width, height) / imgRef.current.width) * croppedWidth
+  //   );
+
+  //   const referenceResolution: Resolution = [refWidth, refHeight];
+
+  //   const updatedRegion = {
+  //     id: region?.id || uuidv4(),
+  //     type: 'imashape',
+  //     enabled: true,
+  //     reference_resolution: referenceResolution,
+  //     shape: {
+  //       shape: {
+  //         geometry_type: 3, // Square
+  //         center: {
+  //           geometry_type: 8, // Center point
+  //           x: normalizedX + Math.round(normalizedSide / 2), // Center X
+  //           y: normalizedY + Math.round(normalizedSide / 2), // Center Y
+  //         },
+  //         side: normalizedSide,
+  //       },
+  //     },
+  //   };
+
+  //   console.log('Updated Region:', updatedRegion);
+  //   setRegion(updatedRegion);
+  //   updateRegion(updatedRegion); 
+  //   setCroppedImageSrc(`${Urls.fetchPhantomCamera}/Camera1/region/${updatedRegion.id}/stream`);
+  // };
+
+  const handleDoneCropping = async () => {
     if (!completedCrop || !imgRef.current) {
-      console.log('No crop completed or image reference missing.');
-      return;
+        console.log('No crop completed or image reference missing.');
+        return;
     }
 
     const { x, y, width, height } = completedCrop;
 
-    // Camera settings
     const cameraSettings = {
-      resolution: [1280, 720],
-      centre_crop: true, // Replace with the actual camera setting
+        resolution: [1280, 720],
+        centre_crop: false,
     };
 
     const [refWidth, refHeight] = cameraSettings.resolution;
@@ -287,65 +354,72 @@ export default function ModelPage() {
     let croppedWidth = refWidth;
     let croppedHeight = refHeight;
 
-    // Adjust for centre_crop
     if (cameraSettings.centre_crop) {
-      const cropAspectRatio = refWidth / refHeight;
-      if (cropAspectRatio > 1) {
-        // Landscape: cropped height stays the same
-        croppedWidth = croppedHeight * cropAspectRatio;
-        cropStartX = (refWidth - croppedWidth) / 2;
-      } else {
-        // Portrait: cropped width stays the same
-        croppedHeight = croppedWidth / cropAspectRatio;
-        cropStartY = (refHeight - croppedHeight) / 2;
-      }
+        const cropAspectRatio = refWidth / refHeight;
+        if (cropAspectRatio > 1) {
+            croppedWidth = croppedHeight * cropAspectRatio;
+            cropStartX = (refWidth - croppedWidth) / 2;
+        } else {
+            croppedHeight = croppedWidth / cropAspectRatio;
+            cropStartY = (refHeight - croppedHeight) / 2;
+        }
     }
 
-    // Normalize dimensions to the reference resolution
     const normalizedX = Math.round(((x + cropStartX) / imgRef.current.width) * refWidth);
     const normalizedY = Math.round(((y + cropStartY) / imgRef.current.height) * refHeight);
     const normalizedSide = Math.round(
-      (Math.min(width, height) / imgRef.current.width) * croppedWidth
+        (Math.min(width, height) / imgRef.current.width) * croppedWidth
     );
 
     const referenceResolution: Resolution = [refWidth, refHeight];
 
-    const region = {
-      id: 'cropped_region',
-      type: 'imashape',
-      enabled: true,
-      reference_resolution: referenceResolution,
-      shape: {
+    const updatedRegion = {
+        id: region?.id || uuidv4(),
+        type: 'imashape',
+        enabled: true,
+        reference_resolution: referenceResolution,
         shape: {
-          geometry_type: 3, // Square
-          center: {
-            geometry_type: 8, // Center point
-            x: normalizedX + Math.round(normalizedSide / 2), // Center X
-            y: normalizedY + Math.round(normalizedSide / 2), // Center Y
-          },
-          side: normalizedSide,
+            shape: {
+                geometry_type: 3,
+                center: {
+                    geometry_type: 8,
+                    x: normalizedX + Math.round(normalizedSide / 2),
+                    y: normalizedY + Math.round(normalizedSide / 2),
+                },
+                side: normalizedSide,
+            },
         },
-      },
     };
 
-    console.log('Region Dimensions:', region);
-    setRegion(region);
+    console.log('Updated Region:', updatedRegion);
+    setRegion(updatedRegion);
 
-  };
+    // Update the backend and fetch the stream URL
+    await updateRegion(updatedRegion);
 
-  useEffect(() => {
-    const updateRegion = async () => {
-      if (region && !regionIDs.includes(region.id)) {
-        await axios.post(`${Urls.fetchRegions}`, region);
-      } else {
-        await axios.put(`${Urls.fetchRegions}/${region?.id}`, region);
+    // Update croppedImageSrc to the backend stream
+    setCroppedImageSrc(`${Urls.fetchPhantomCamera}/Camera1/region/${updatedRegion.id}/stream`);
+};
+
+  const updateRegion = async (regionToUpdate: RegionStructure) => {
+    try {
+      if (!regionToUpdate?.id) {
+        console.error("Region ID is undefined. Cannot update region.");
+        return;
       }
-    };
 
-    updateRegion();
-    setCroppedImageSrc(`${Urls.fetchPhantomCamera}/Camera1/region/${region?.id}/stream`);
-
-  }, [region]);
+      if (!regionIDs.includes(regionToUpdate.id)) {
+        await axios.post(`${Urls.fetchRegions}`, { region: regionToUpdate });
+      } else {
+        await axios.put(`${Urls.fetchRegions}/${regionToUpdate.id}`, {
+          id: regionToUpdate.id,
+          region: regionToUpdate,
+        });
+      }
+    } catch (error) {
+      console.error("Error updating region:", error);
+    }
+  };
 
   const handleStart = (isHolding = false) => {
     if (holdToRecord) {
@@ -486,9 +560,10 @@ export default function ModelPage() {
           ) : croppedImageSrc ? (
             // Display cropped image
             <img
-              src={croppedImageSrc}
-              alt="Cropped View"
-              className="border border-gray-300"
+            src={croppedImageSrc}
+            alt="Cropped Stream View"
+            onError={() => console.error('Error loading the stream.')}
+            className="border border-gray-300"
             />
           ) : (
             // Display original stream

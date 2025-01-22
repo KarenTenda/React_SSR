@@ -8,7 +8,6 @@ import { useToast } from '@/components/ui/use-toast';
 
 export default function AdvancedTaskSettings({ task }: { task: TaskStructure | null }) {
     const { toast } = useToast();
-    const [taskSettings, setTaskSettings] = useState(JSON.stringify(task, null, 2));
     const [textareaValue, setTextareaValue] = useState(JSON.stringify(task, null, 2));
 
     const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

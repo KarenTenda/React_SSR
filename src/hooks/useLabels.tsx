@@ -74,6 +74,9 @@ export const useLabels = () => {
         Component: t('Component'),
         SearchComponents: t('Search components...'),
 
+        //AddTaskModal
+        AddTask: t('Add Task'),
+
         //UserGuide
         SetupGuidesTitle: t('What do you want to do?'),
         RobotSetUpTitle: t('Robot Setup guide'),

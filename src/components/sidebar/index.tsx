@@ -77,7 +77,7 @@ const items: ISidebarItem[] = [
       },
       {
         name: "Authentication",
-        path: "/rolesPermissions/authentication",
+        path: "/rolesPermissions/authenticaton",
       }
     ],
   },
@@ -124,6 +124,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }: SidebarProps) => {
           <Image
             className={`h-10 w-fit`}
             src="/Odin_Phantom_icon.png"
+            priority={true}
             width={50}
             height={50}
             alt="Phantom Logo"

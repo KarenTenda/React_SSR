@@ -5,11 +5,11 @@ export enum TaskTypes {
     SCANNING = "scanning",
 }
 
-export const componentTypeMap = [
-    "Inference",
-    "Checking",
-    "Tracking",
-    "Scanning",
+export const taskTypeMap = [
+    "inference",
+    "checking",
+    "tracking",
+    "scanning",
 
 ]
 
@@ -28,6 +28,13 @@ export enum InferenceSpecificTypes {
     SCANNING = "scanning",
 }
 
+export const inferenceSpecificTypeMap = [
+    "keypoint",
+    "classification",
+    "object",
+    "scanning",
+]
+
 export enum CheckingSpecificTypes {
     LABEL = "label",
     POINT_IN_REGION = "point_in_region",
@@ -36,6 +43,18 @@ export enum CheckingSpecificTypes {
     AGGREGATE = "aggregate",
 }
 
+export const checkingSpecificTypeMap = [
+    "label",
+    "point_in_region",
+    "positional_static_region",
+    "positional_dynamic_region",
+    "aggregate",
+]
+
 export enum TrackingSpecificTypes {
     REFERENCE = "reference"
 }
+
+export const trackingSpecificTypeMap = [
+    "reference",
+]

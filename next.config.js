@@ -15,6 +15,10 @@ const nextConfig = {
       // },
     ],
   },
+  // compiler: {
+  //   // Enables the styled-components SWC transform
+  //   styledComponents: true
+  // }
 };
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({

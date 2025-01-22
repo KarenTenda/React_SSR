@@ -32,3 +32,24 @@ function useTaskService(): [TaskStructure[], string[]] {
 };
 
 export default useTaskService;
+
+export function useTaskServiceByType(type: string): TaskStructure[] {
+  const [tasks] = useTaskService();
+  const filteredTasks = tasks.filter((task) => task.type === type);
+  return filteredTasks;
+}
+
+export function useInferenceTaskIDs(): string[] {
+  const tasks = useTaskServiceByType("inference");
+  return tasks.map((task) => task.id);
+}
+
+export function useCheckingTaskIDs(): string[] {
+  const tasks = useTaskServiceByType("checking");
+  return tasks.map((task) => task.id);
+}
+
+export function useTrackingTaskIDs(): string[] {
+  const tasks = useTaskServiceByType("tracking");
+  return tasks.map((task) => task.id);
+}

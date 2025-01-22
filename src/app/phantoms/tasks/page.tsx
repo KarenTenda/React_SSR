@@ -6,9 +6,15 @@ import { Container } from 'react-bootstrap';
 import Navbar from '@/components/navbar/Navbar';
 import useNavbarComponents from '@/components/navbar/useNavbarComponents';
 import TaskGrid from './_components/taskGrid/TaskGrid';
+import AddTaskModal from './_components/addTask/AddTaskModal';
+import { useCameraService } from '../models/classifier/components';
+import useRegionService from '../regions/hooks/useRegions';
 
 const TasksPage: React.FC = () => {
     const [tasks, savedTaskIDs] = useTaskService();
+    const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+    const [cameras, saveCameraIDs] = useCameraService();
+    const [regionIDs, saveRegionIDs] = useRegionService();
 
     const {
         filteredAndSortedItems: filteredTasks,
@@ -43,7 +49,7 @@ const TasksPage: React.FC = () => {
                 onSortChange={handleSortChange}
                 sortOrder={sortOrder}
                 onSortOrderChange={toggleSortOrder}
-                onAddClick={() => { }}
+                onAddClick={() => {setShowAddTaskModal(true)}}
                 addButtonText='Add Task'
                 isAddButtonDisabled={true}
             />
@@ -53,7 +59,12 @@ const TasksPage: React.FC = () => {
                         <div className='flex flex-1 px-3 md:px-5 pb-0'>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                                 <TaskGrid tasks={filteredTasks} />
-                                {/* <CameraEventsService /> */}
+                                <AddTaskModal 
+                                    open={showAddTaskModal} 
+                                    onClose={() => {setShowAddTaskModal(false)}}
+                                    cameraIds={saveCameraIDs}
+                                    regionIds={saveRegionIDs}
+                                />
                             </div>
                         </div>
 
