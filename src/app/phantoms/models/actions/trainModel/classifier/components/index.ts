@@ -12,7 +12,7 @@ export {
   DeleteIcon,
   InfoIcon,
   DotsVerticalIcon
-} from '../../../../../../public/assets/Icons';
+} from '../../../../../../../../public/assets/Icons';
 
 export { Button } from '@/components/ui/button';
 

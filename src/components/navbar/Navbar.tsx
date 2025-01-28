@@ -96,7 +96,7 @@ const Navbar = <T extends object>({
                         variant="outline"
                         onClick={onAddClick}
                         disabled = {!isAddButtonDisabled || false} 
-                    // className="bg-blue-500 text-white font-bold"
+                    className="bg-[#FA8072] text-white"
                     >
                         + {addButtonText}
                     </Button>

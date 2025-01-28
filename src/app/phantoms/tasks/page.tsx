@@ -7,7 +7,7 @@ import Navbar from '@/components/navbar/Navbar';
 import useNavbarComponents from '@/components/navbar/useNavbarComponents';
 import TaskGrid from './_components/taskGrid/TaskGrid';
 import AddTaskModal from './_components/addTask/AddTaskModal';
-import { useCameraService } from '../models/classifier/components';
+import { useCameraService } from '../models/actions/trainModel/classifier/components';
 import useRegionService from '../regions/hooks/useRegions';
 
 const TasksPage: React.FC = () => {

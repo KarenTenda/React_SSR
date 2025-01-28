@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import ClickableIconButton from '@/components/custom/buttons/ClickableIconButton';
-import { InfoIcon } from '../../../../../../../../../public/assets/Icons';
+import { InfoIcon } from '../../../../../../../../../../../public/assets/Icons';
 
 const WebCamSettingsActiveComponent = ({ setIsWebcamSettingsActive }: { setIsWebcamSettingsActive: React.Dispatch<React.SetStateAction<boolean>> }) => {
 

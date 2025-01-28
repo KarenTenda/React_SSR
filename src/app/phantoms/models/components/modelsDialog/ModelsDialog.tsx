@@ -16,7 +16,7 @@ const ModelsDialog = ({ isOpen, onClose, onSelect }: ModelsDialogProps) => {
     const handleSelect = (type: string) => {
         setLoading(true);
         onSelect(type);
-        router.push(`/phantoms/models/${type}`);
+        router.push(`/phantoms/models/actions/trainModel/${type}`);
     };
 
     if (!isOpen) return null;

@@ -11,11 +11,11 @@ const ModelPage: React.FC = () => {
 
   React.useEffect(() => {
     if (modelType === 'pose') {
-      router.push('/phantoms/models/pose');
+      router.push('/phantoms/models/actions/trainModel/pose');
     } else if (modelType === 'classifier') {
-      router.push('/phantoms/models/classifier');
+      router.push('/phantoms/models/actions/trainModel/classifier');
     } else if (modelType === 'object') {
-      router.push('/phantoms/models/object');
+      router.push('/phantoms/models/actions/trainModel/object');
     }
   }, [modelType, router]);
 

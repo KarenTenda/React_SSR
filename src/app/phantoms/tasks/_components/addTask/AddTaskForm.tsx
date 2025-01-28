@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
-import { uuidv4 } from "@/app/phantoms/models/classifier/components";
+import { uuidv4 } from "@/app/phantoms/models/actions/trainModel/classifier/components";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { checkingSpecificTypeMap, inferenceSpecificTypeMap, taskTypeMap, TaskTypes, TrackingSpecificTypes } from "../../types/TaskTypes";
 import { useInferenceTaskIDs } from "../../hooks/useTaskService";

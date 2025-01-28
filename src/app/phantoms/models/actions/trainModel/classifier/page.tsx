@@ -21,7 +21,7 @@ import '@xyflow/react/dist/style.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
-import { UploadIcon, VideosIcon, AddIcon } from '../../../../../public/assets/Icons';
+import { UploadIcon, VideosIcon, AddIcon } from '../../../../../../../public/assets/Icons';
 import useCameraService from '@/app/cameras/hooks/useCameraService';
 import WebCamSettingsActiveComponent from './components/reactFlowCardNodes/collectDataNode/webCamActiveComponent/WebCamSettingsActiveComponent';
 import CollectDataUsingWebcam from './components/reactFlowCardNodes/collectDataNode/webCamActiveComponent/CollectDataUsingWebcam';
@@ -70,7 +70,7 @@ function ClassNode({ data }: any) {
 
   return (
     <>
-      <Card className="w-[300px] h-auto">
+      <Card className="w-full max-w-[450px] h-auto">
         <CardHeaderComponent
           title={title}
           onEditClick={handleEditClick}

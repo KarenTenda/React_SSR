@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 interface ClickableIconButtonProps {
   Icon: React.ElementType;
   onClick?: () => void;
-  tooltipText: string;
+  tooltipText?: string;
   disabled?: boolean;
 }
 
