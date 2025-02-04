@@ -37,7 +37,7 @@ export default function AdvancedTaskSettings({ task }: { task: TaskStructure | n
     };
 
     return (
-        <div className="grid w-full gap-2">
+        <>
             <Textarea
                 placeholder="Enter Task settings here"
                 value={textareaValue} 
@@ -45,7 +45,7 @@ export default function AdvancedTaskSettings({ task }: { task: TaskStructure | n
                 // className="h-[500px]"
                 rows={25}
             />
-            <Button onClick={handleSubmit}>Submit</Button>
-        </div>
+            <Button className={`mt-2 bg-[#FA8072] text-white`} onClick={handleSubmit}>Submit</Button>
+        </>
     )
 }

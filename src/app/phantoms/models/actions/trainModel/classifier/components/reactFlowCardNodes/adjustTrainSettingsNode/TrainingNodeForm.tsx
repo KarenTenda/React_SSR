@@ -34,30 +34,95 @@ import {
     SelectItem,
 } from "@/components/ui/select";
 import { SaveIcon } from "@/public/assets/Icons"
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import Urls from "@/lib/Urls";
+import { Loader2 } from "lucide-react";
 
 const batchSizeOptions = [16, 32, 64, 128, 256, 512];
 
-export default function TrainModelForm() {
+export default function TrainModelForm({ datasetId, onTrainingComplete }: {
+    datasetId: string,
+    onTrainingComplete: () => void
+}) {
+    const [isTraining, setIsTraining] = useState(false);
+    const { toast } = useToast();
     const form = useForm<TrainModelSettings>({
         resolver: zodResolver(trainModelSchema),
         defaultValues: {
-            epochs: 100,
+            epochs: 3,
             learningRate: 0.01,
             batchSize: 32,
         },
     });
 
     const onSubmit = (values: TrainModelSettings) => {
-        console.log("Form Values:", values);
-        // Handle form submission, e.g., send data to the backend
+        console.log("Updated settings:", values);
+        toast({
+            title: "Success!",
+            // variant: "success",
+            description: "Settings saved successfully.",
+        });
     };
+
+    const handleTrainModel = async (values: TrainModelSettings) => {
+        console.log("Starting training with settings:", values);
+        setIsTraining(true);
+        try {
+            const response = await fetch(Urls.fetchTrainResults, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    datasetId: datasetId,
+                    epochs: values.epochs,
+                    batchSize: values.batchSize,
+                    learningRate: values.learningRate
+                }),
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                console.log("Training successful:", data);
+                onTrainingComplete();
+                toast({
+                    title: "Training successful!",
+                    // variant: "success",
+                    description: `Training successfully for ${datasetId}.`,
+                });
+                setIsTraining(false);
+            } else {
+                console.error("Training failed:", data.message);
+                toast({
+                    title: "Training Failed",
+                    variant: "destructive",
+                    description: data.message,
+                });
+                setIsTraining(false);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            setIsTraining(false);
+        }
+    };
+
 
     return (
         <Card className="w-full max-w-md">
             <CardHeader className="flex justify-between px-4 py-2">
                 <CardTitle className="text-lg font-semibold">Train Model</CardTitle>
-                <Button variant="outline" size="sm">
-                    Start Training
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTrainModel(form.getValues())}
+                    disabled={isTraining}
+                >
+                    {isTraining ? (
+                        <>
+                            <Loader2 className="animate-spin" />
+                            Training...
+                        </>
+                    ) : "Start Training"}
+
                 </Button>
             </CardHeader>
 
@@ -148,7 +213,7 @@ export default function TrainModelForm() {
 
                                     <div className="flex justify-end">
                                         <Button type="submit" variant='ghost'>
-                                            <SaveIcon/>
+                                            <SaveIcon />
                                         </Button>
                                     </div>
                                 </form>

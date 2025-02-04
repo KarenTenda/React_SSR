@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, createContext, useContext, ReactNode } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -20,19 +20,91 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-
+import { v4 as uuidv4 } from 'uuid';
 import { UploadIcon, VideosIcon, AddIcon } from '../../../../../../../public/assets/Icons';
 import useCameraService from '@/app/cameras/hooks/useCameraService';
 import WebCamSettingsActiveComponent from './components/reactFlowCardNodes/collectDataNode/webCamActiveComponent/WebCamSettingsActiveComponent';
 import CollectDataUsingWebcam from './components/reactFlowCardNodes/collectDataNode/webCamActiveComponent/CollectDataUsingWebcam';
 import CardHeaderComponent from './components/reactFlowCardNodes/collectDataNode/cardHeaderComponent/CardHeaderComponent';
 import TrainModelForm from './components/reactFlowCardNodes/adjustTrainSettingsNode/TrainingNodeForm';
+import { RegionStructure } from '@/app/phantoms/regions/structures/RegionStructure';
+import { Urls } from './components';
+import { toast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
+const capturedImagesList: string[] = [];
+const initialRegion: RegionStructure = {
+  id: uuidv4(),
+  type: 'imashape',
+  enabled: true,
+  reference_resolution: [1280, 720],
+  shape: {
+    shape: {
+      geometry_type: 3,
+      center: {
+        geometry_type: 8,
+        x: 640,
+        y: 360,
+      },
+      side: 100,
+    },
+  },
+};
+export interface LabelAnnotationModel extends Record<string, unknown> {
+  annotation_id: string;
+  annotation: {
+    annotation_type: 'LABEL'
+    label: string;
+    images: string[];
+    camera_id?: string;
+    region: RegionStructure;
+  };
+  creator: string;
+  creation_date: string;
+  modification_date: string;
+  status: {
+    active: boolean;
+  };
+}
 
-function ClassNode({ data }: any) {
+const cardClassAnnotations: LabelAnnotationModel[] = [];
+let datasetId = "";
+
+// ✅ Create Context
+const TrainingContext = createContext<{
+  isTrainingDone: boolean;
+  setIsTrainingDone: (done: boolean) => void;
+} | null>(null);
+
+// ✅ Create Provider Component
+export const TrainingProvider = ({ children }: { children: ReactNode }) => {
+  const [isTrainingDone, setIsTrainingDone] = useState(false);
+
+  return (
+    <TrainingContext.Provider value={{ isTrainingDone, setIsTrainingDone }}>
+      {children}
+    </TrainingContext.Provider>
+  );
+};
+
+// ✅ Hook to Use Context
+export const useTraining = () => {
+  const context = useContext(TrainingContext);
+  if (!context) {
+    throw new Error("useTraining must be used within a TrainingProvider");
+  }
+  return context;
+};
+
+function ClassNode({ data }: { data: LabelAnnotationModel }) {
   const [cameras, savedCameraIDs] = useCameraService();
-  const [selectedCameraId, setSelectedCameraId] = useState(cameras.length > 0 ? cameras[0].id : '');
-  
+  const [selectedCameraId, setSelectedCameraId] = useState<string>(cameras.length > 0 ? cameras[0].id : '');
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
+  const [cardCapturedImages, setCardCapturedImages] = useState<{ [ClassCardAnnotationId: string]: Array<any> }>({});
+  const [classCardAnnotation, setClassCardAnnotation] = useState<LabelAnnotationModel>(data);
+  const [selectedRegion, setSelectedRegion] = useState<RegionStructure>();
+
+
   useEffect(() => {
     if (cameras.length > 0 && !selectedCameraId) {
       setSelectedCameraId(cameras[0].id);
@@ -40,12 +112,12 @@ function ClassNode({ data }: any) {
   }, [cameras, selectedCameraId]);
 
   const [isEditingCardName, setIsEditingCardName] = useState(false);
-  const [title, setTitle] = useState(data.label);
+  const [title, setTitle] = useState(data?.annotation?.label || 'class??');
 
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [isWebcamSettingsActive, setIsWebcamSettingsActive] = useState(false);
   const [isUploadImagesActive, setIsUploadImagesActive] = useState(false);
-  
+
   const handleEditClick = () => {
     setIsEditingCardName(true);
   };
@@ -56,7 +128,16 @@ function ClassNode({ data }: any) {
 
   const handleTitleBlur = () => {
     setIsEditingCardName(false);
-    data.label = title;
+    data.annotation.label = title;
+    setClassCardAnnotation(
+      {
+        ...classCardAnnotation,
+        annotation: {
+          ...classCardAnnotation.annotation,
+          label: title,
+        },
+      }
+    );
   };
 
   const handleWebcamClick = () => {
@@ -66,6 +147,43 @@ function ClassNode({ data }: any) {
   const handleUploadClick = () => {
     setIsUploadImagesActive(true);
   };
+
+  useEffect(() => {
+    console.log("data", data)
+    console.log("capturedImages:", capturedImages);
+    capturedImagesList.length = 0;
+    capturedImages.forEach((image) => capturedImagesList.push(image));
+    console.log("capturedImagesList:", capturedImagesList);
+    setCardCapturedImages((prevCardCapturedImages) => ({
+      ...prevCardCapturedImages,
+      [classCardAnnotation.annotation_id]: capturedImages,
+    }));
+    setClassCardAnnotation((prevClassCardAnnotation) => ({
+      ...prevClassCardAnnotation,
+      annotation: {
+        ...prevClassCardAnnotation.annotation,
+        images: capturedImages,
+        camera_id: selectedCameraId,
+        region: selectedRegion || initialRegion,
+
+      },
+    }));
+    console.log("classCardAnnotation:", classCardAnnotation);
+
+  }, [capturedImages]);
+
+  useEffect(() => {
+    // check if the classCardAnnotation is already in the cardClassAnnotations, if so updtae otherwise, add it
+    const index = cardClassAnnotations.findIndex((card) => card.annotation_id === classCardAnnotation.annotation_id);
+    if (index !== -1) {
+      cardClassAnnotations[index] = classCardAnnotation
+    } else {
+      cardClassAnnotations.push(classCardAnnotation);
+    }
+    console.log("cardClassAnnotations:", cardClassAnnotations);
+
+  }, [classCardAnnotation]);
+
 
 
   return (
@@ -86,9 +204,9 @@ function ClassNode({ data }: any) {
           {isWebcamActive ? (
             isWebcamSettingsActive ? (
               <>
-                <WebCamSettingsActiveComponent 
-                  setIsWebcamSettingsActive={setIsWebcamSettingsActive} 
-                /> 
+                <WebCamSettingsActiveComponent
+                  setIsWebcamSettingsActive={setIsWebcamSettingsActive}
+                />
               </>
             ) : (
               <div className='flex flex-row'>
@@ -98,11 +216,14 @@ function ClassNode({ data }: any) {
                   cameras={cameras}
                   setIsWebcamActive={setIsWebcamActive}
                   setIsWebcamSettingsActive={setIsWebcamSettingsActive}
+                  capturedImages={capturedImages}
+                  setCapturedImages={setCapturedImages}
+                  setSelectedRegion={setSelectedRegion}
                 />
 
               </div>
             )
-           ) : (
+          ) : (
             <>
               <p className="text-sm mb-2">Add Image Samples:</p>
               <div className="flex space-x-2 pb-2">
@@ -116,11 +237,87 @@ function ClassNode({ data }: any) {
                 </Button>
               </div>
             </>
-           )}
+          )}
         </CardContent>
-      </Card> 
+      </Card>
       <Handle type="source" position={Position.Right} />
     </>
+  );
+}
+
+function CreateDatasetNode() {
+  const [isCreatingDataset, setIsCreatingDataset] = useState(false);
+  const handleCreateDataset = async () => {
+
+    if (cardClassAnnotations.length === 0) {
+      alert("No classes to create dataset!");
+      toast({
+        title: "No Classes",
+        variant: "destructive",
+        description: "No classes to create dataset",
+      });
+      return;
+    }
+    setIsCreatingDataset(true);
+
+    try {
+      // console.log(Urls.fetchCreatedDataset)
+      const response = await fetch(Urls.fetchCreatedDataset, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ annotations: cardClassAnnotations }), // Send all classes
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        console.log("Dataset created:", data.datasetId);
+        datasetId = data.datasetId;
+        toast({
+          title: "Dataset Created",
+          description: `Dataset created successfully! ID: ${data.datasetId}`,
+        });
+        setIsCreatingDataset(false);
+        // alert(`Dataset created successfully! ID: ${data.datasetId}`);
+      } else {
+        console.error("Dataset creation failed:", data.message);
+        toast({
+          title: "Dataset Creation Failed",
+          variant: "destructive",
+          description: data.message,
+        });
+        setIsCreatingDataset(false);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Dataset Creation Failed",
+        variant: "destructive",
+        description: "Failed to create dataset completely",
+      });
+      setIsCreatingDataset(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center h-[100px] w-[250px] border-dashed border-2 border-gray-300 rounded-lg bg-gray-100 cursor-pointer">
+      <Button
+        onClick={handleCreateDataset}
+        variant="outline"
+        className="text-sm"
+        disabled={cardClassAnnotations.length === 0 || isCreatingDataset}
+      >
+        {isCreatingDataset ? (
+          <>
+            <Loader2 className="animate-spin" />
+            Creating Dataset...
+          </>
+        ) : (
+          <>
+            <AddIcon /> Create Dataset
+          </>
+        )}
+      </Button>
+    </div>
   );
 }
 
@@ -129,7 +326,7 @@ function AddClassNode({ onAddClass }: { onAddClass: () => void }) {
     <>
       <div className="flex items-center justify-center h-[100px] w-[250px] border-dashed border-2 border-gray-300 rounded-lg bg-gray-100 cursor-pointer">
         <Button onClick={onAddClass} variant="outline" className="text-sm">
-          <AddIcon/> Add a class
+          <AddIcon /> Add a class
         </Button>
       </div>
       {/* <Handle type="source" position={Position.Right} /> */}
@@ -137,54 +334,120 @@ function AddClassNode({ onAddClass }: { onAddClass: () => void }) {
   );
 }
 
-function TrainingNode({ data }: any) {
+function TrainingNode() {
+  const { setIsTrainingDone } = useTraining();
+
+  const handleTrainingComplete = () => {
+    console.log("Training Completed!");
+    setIsTrainingDone(true);
+  };
+
   return (
     <>
       <Handle type="target" position={Position.Left} />
-      {/* <Card className="w-[200px] h-auto">
-        <CardHeader className="flex justify-between px-3 py-2">
-          <CardTitle className="text-sm items-left">{data.label}</CardTitle>
-          <Button variant="outline" size="sm" className="text-sm items-center">
-            Train Model
-          </Button>
-        </CardHeader>
-        <div className="border-t border-gray-300" />
-        <CardContent className="flex flex-col px-3 py-2">
-          <Accordion type="single" collapsible className="w-full text-sm">
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Advanced</AccordionTrigger>
-              <AccordionContent>
-                Training settings
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card> */}
-      <TrainModelForm/>
-
+      <TrainModelForm datasetId={datasetId} onTrainingComplete={handleTrainingComplete} />
       <Handle type="source" position={Position.Right} />
     </>
   );
 }
 
 function PreviewNode({ data }: any) {
+  const [prediction, setPrediction] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { isTrainingDone } = useTraining();
+
+  const runInference = async () => {
+    console.log("Started Inference process");
+    setIsProcessing(true);
+
+    try {
+      // implement a default image or error messgae if the imageUrl throws an error
+
+      const response = await fetch(Urls.fetchInferenceResults, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // id: "0414fdee-e281-404e-bb31-5563239bbf6f",
+          // imageUrl: `${Urls.fetchPhantomCamera}/Camera1/region/8699f6b4-128a-40ac-9407-1c35a087190b/stream`
+          id: datasetId,
+          imageUrl: `${Urls.fetchPhantomCamera}/${cardClassAnnotations[0].annotation.camera_id}/region/${cardClassAnnotations[0].annotation.region.id}/stream`
+        }),
+      });
+
+      // ✅ Parse JSON once and store the result
+      const result = await response.json();
+      if (result.predictions && result.predictions.length > 0) {
+        // ✅ Extract all predictions from **first frame** (outer array)
+        const formattedPrediction = result.predictions[0] // ⬅ Extract first frame
+          .map((pred: { label: any; confidence: number }) =>
+            `${pred.label} (${(pred.confidence * 100).toFixed(2)}%)`
+          )
+          .join(", ");
+
+        setPrediction(formattedPrediction); // ✅ Set formatted string
+      }
+      else {
+        setPrediction("No prediction found");
+      }
+
+    } catch (error) {
+      console.error("🔴 Inference Error:", error);
+      setPrediction("Failed to run model");
+
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isTrainingDone) {
+      const interval = setInterval(() => {
+        runInference();
+      }, 500);
+
+      return () => clearInterval(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTrainingDone]);
+
+
   return (
     <>
       <Handle type="target" position={Position.Left} />
-      <Card className="w-[200px] h-auto ">
+      <Card className="w-[200px] h-auto">
         <CardHeader className="flex flex-row justify-between items-center space-x-2 px-3 py-2">
           <CardTitle className="text-sm">{data.label}</CardTitle>
-          <Button variant="outline" size="sm" className="text-sm">
-            Export Model
-          </Button>
+          {/* <Button variant="outline" size="sm" className="text-sm" onClick={runInference}
+          disabled={!data.isTrained}
+          >
+            {isProcessing ? "Processing..." : "Run Model"}
+          </Button> */}
         </CardHeader>
         <div className="border-t border-gray-300" />
         <CardContent className="flex flex-col px-3 py-2">
-          <CardDescription className="text-sm">
-            You must train the model on the left before you can preview it here.
-          </CardDescription>
+          {(!isTrainingDone) ? (
+            <CardDescription className="text-sm">
+              You must train the model on the left before you can preview it here.
+            </CardDescription>
+          ) : (
+            <>
+              <div className="w-full h-[120px] bg-gray-100 flex items-center justify-center">
+                <img
+                  src={
+                    `${Urls.fetchPhantomCamera}/${cardClassAnnotations[0].annotation.camera_id}/region/${cardClassAnnotations[0].annotation.region.id}/stream`
+                    // `${Urls.fetchPhantomCamera}/Camera1/region/8699f6b4-128a-40ac-9407-1c35a 087190b/stream`
+                  }
+                  alt="Cropped Stream"
+                  className="max-h-full max-w-full"
+                />
+              </div>
+              <div className="border-t border-gray-300 my-2" />
+              <CardDescription className="text-sm text-center">
+                {prediction ? `Prediction: ${prediction}` : "Click 'Run Model' to get results"}
+              </CardDescription>
+            </>
+          )}
         </CardContent>
-
       </Card>
     </>
   );
@@ -192,10 +455,74 @@ function PreviewNode({ data }: any) {
 
 const initialNodes = [
   {
-    id: '1',
+    id: 'classNode1',
     type: 'classNode',
     position: { x: 100, y: 100 },
-    data: { label: 'Class 1' },
+    data: {
+      annotation_id: '1',
+      annotation: {
+        annotation_type: 'LABEL',
+        label: 'Ok',
+        images: [],
+        camera_id: 'Camera1',
+        region: {
+          id: uuidv4(),
+          type: 'imashape',
+          enabled: true,
+          reference_resolution: [1280, 720],
+          shape: {
+            shape: {
+              geometry_type: 3,
+              center: {
+                geometry_type: 8,
+                x: 640,
+                y: 360,
+              },
+              side: 100,
+            },
+          },
+        }
+      },
+      creator: 'karen',
+      creation_date: new Date().toISOString(),
+      modification_date: new Date().toISOString(),
+      status: { active: true },
+    }
+  },
+  {
+    id: 'classNode2',
+    type: 'classNode',
+    position: { x: 100, y: 300 },
+    data: {
+      annotation_id: '1',
+      annotation: {
+        annotation_type: 'LABEL',
+        label: 'Nok',
+        images: [],
+        camera_id: 'Camera1',
+        region: {
+          id: uuidv4(),
+          type: 'imashape',
+          enabled: true,
+          reference_resolution: [1280, 720],
+          shape: {
+            shape: {
+              geometry_type: 3,
+              center: {
+                geometry_type: 8,
+                x: 640,
+                y: 360,
+              },
+              side: 100,
+            },
+          },
+        }
+      },
+      creator: 'karen',
+      creation_date: new Date().toISOString(),
+      modification_date: new Date().toISOString(),
+      status: { active: true },
+    }
   },
   {
     id: 'training',
@@ -206,19 +533,30 @@ const initialNodes = [
   {
     id: 'preview',
     position: { x: 650, y: 100 },
-    data: { label: 'Preview' },
+    data: {
+      label: 'Preview',
+      isTrained: false,
+      croppedStreamRegion: RegionStructure
+    },
     type: 'previewNode',
   },
   {
     id: 'addClass',
     type: 'addClassNode',
-    position: { x: 100, y: 300 },
+    position: { x: 100, y: 500 },
     data: { onAddClass: () => { } },
+  },
+  {
+    id: 'createDataset',
+    type: 'createDatasetNode',
+    position: { x: 400, y: 500 },
+    data: { onCreateDataset: () => { } },
   },
 ];
 
 const initialEdges = [
-  { id: 'e1-training', source: '1', target: 'training' },
+  { id: 'e1-training', source: 'classNode1', target: 'training' },
+  { id: 'e2-training', source: 'classNode2', target: 'training' },
   { id: 'e2-preview', source: 'training', target: 'preview' },
 ];
 
@@ -226,32 +564,76 @@ function Flow() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
-  // Function to add a new class node
   const addClassNode = useCallback(() => {
     const newId = `${nodes.length + 1}`;
-    setNodes((nds) => [
-      ...nds,
-      {
-        id: newId,
-        type: 'classNode',
-        position: { x: Math.random() * 250, y: Math.random() * 250 },
-        data: { label: `Class ${newId}` },
+
+    const annotation_id = newId;
+    const creator = 'karen';
+    const creation_date = new Date().toISOString(); // Proper date format
+    const modification_date = new Date().toISOString();
+    const status = { active: true };
+
+    const newCard: LabelAnnotationModel = {
+      annotation_id,
+      annotation: {
+        annotation_type: 'LABEL',
+        label: 'New Label',
+        images: [],
+        camera_id: 'Camera1',
+        region: {
+          id: uuidv4(),
+          type: 'imashape',
+          enabled: true,
+          reference_resolution: [1280, 720],
+          shape: {
+            shape: {
+              geometry_type: 3,
+              center: {
+                geometry_type: 8,
+                x: 640,
+                y: 360,
+              },
+              side: 100,
+            },
+          },
+        }
       },
-    ]);
+      creator,
+      creation_date,
+      modification_date,
+      status
+    };
+
+    cardClassAnnotations.push(newCard);
+
+    const newNode: Node<LabelAnnotationModel> = {
+      id: newId,
+      type: 'classNode',
+      position: { x: Math.random() * 250, y: Math.random() * 250 },
+      data: newCard,
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+
     setEdges((eds) => [
       ...eds,
       { id: `e${newId}-training`, source: newId, target: 'training' },
     ]);
   }, [nodes, edges]);
 
+
   const nodeTypes = useMemo(
     () => ({
       classNode: ClassNode,
+      // trainingNode: (props: any) => <TrainingNode {...props} setNodes={setNodes} />,
       trainingNode: TrainingNode,
       previewNode: PreviewNode,
-      addClassNode: (props: any) => <AddClassNode {...props} onAddClass={addClassNode} />
+      addClassNode: (props: any) => <AddClassNode {...props} onAddClass={addClassNode} />,
+      createDatasetNode: CreateDatasetNode,
     }),
-    [addClassNode] // Include `addClassNode` in the dependency array
+    [addClassNode,
+      // setNodes
+    ]
   );
 
   const onNodesChange: OnNodesChange = useCallback(
@@ -271,19 +653,21 @@ function Flow() {
 
   return (
     <div className='h-[100%] w-full'>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        nodeTypes={nodeTypes}
-        onConnect={onConnect}
-        fitView
-      >
-        <Background />
-        <Controls />
-        <MiniMap />
-      </ReactFlow>
+      <TrainingProvider>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={nodeTypes}
+          onConnect={onConnect}
+          fitView
+        >
+          <Background />
+          <Controls />
+          <MiniMap />
+        </ReactFlow>
+      </TrainingProvider>
     </div>
   );
 }

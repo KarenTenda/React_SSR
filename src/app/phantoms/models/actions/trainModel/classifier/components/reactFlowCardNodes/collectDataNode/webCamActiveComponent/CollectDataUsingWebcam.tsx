@@ -37,6 +37,7 @@ import useRegionService from '@/app/phantoms/regions/hooks/useRegions';
 import axios from 'axios';
 import { Resolution } from '@/app/phantoms/regions/structures/RegionStructure';
 
+
 interface RegionStructure {
   id: string;
   type: string;
@@ -54,24 +55,6 @@ interface RegionStructure {
     };
   };
 }
-
-const initialRegion: RegionStructure = {
-  id: uuidv4(),
-  type: 'imashape',
-  enabled: true,
-  reference_resolution: [1280, 720],
-  shape: {
-    shape: {
-      geometry_type: 3,
-      center: {
-        geometry_type: 8,
-        x: 640,
-        y: 360,
-      },
-      side: 100,
-    },
-  },
-};
 
 export function useDebounceEffect(
   fn: () => void,
@@ -109,24 +92,35 @@ function centerAspectCrop(
   )
 }
 
+interface CardUploadedAnnotatedImagesType {
+  [cardId: string]: Array<any>;
+}
+
 const CollectDataUsingWebcam = ({
   setIsWebcamActive,
   setIsWebcamSettingsActive,
   cameras,
   selectedCameraId,
-  setSelectedCameraId
+  setSelectedCameraId,
+
+  capturedImages,
+  setCapturedImages,
+  setSelectedRegion,
 }: {
   setIsWebcamActive: React.Dispatch<React.SetStateAction<boolean>>,
   setIsWebcamSettingsActive: React.Dispatch<React.SetStateAction<boolean>>,
   cameras: CameraStructure[],
   selectedCameraId: string,
-  setSelectedCameraId: React.Dispatch<React.SetStateAction<string>>
+  setSelectedCameraId: React.Dispatch<React.SetStateAction<string>>,
+
+  capturedImages: string[],
+  setCapturedImages: React.Dispatch<React.SetStateAction<string[]>>,
+  setSelectedRegion: React.Dispatch<React.SetStateAction<RegionStructure>>
 }) => {
   const [imgSrc, setImgSrc] = useState(`${Urls.fetchPhantomCamera}/${selectedCameraId}/stream`)
   const selectedCamera = cameras.find((camera) => camera.id === selectedCameraId)
   const [regions, existingRegionIDs] = useRegionService()
   const [regionIDs, setRegionIDs] = useState<string[]>(existingRegionIDs)
-  const [selectedRegion, setSelectedRegion] = useState<RegionStructure | null>(initialRegion);
 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
@@ -145,7 +139,7 @@ const CollectDataUsingWebcam = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const [isContinuousCapture, setIsContinuousCapture] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [capturedImages, setCapturedImages] = useState<string[]>([]);
+  // const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [isPaused, setIsPaused] = useState(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -242,18 +236,11 @@ const CollectDataUsingWebcam = ({
       }
     }
 
-    const normalizedX = Math.round((x / imgRef.current.width) * refWidth);
-    const normalizedY = Math.round((y / imgRef.current.height) * refHeight);
-
-    const scaleX = refWidth / imgRef.current.width;
-    const scaleY = refHeight / imgRef.current.height;
-
-    const normalizedWidth = Math.round(width * scaleX);
-    const normalizedHeight = Math.round(height * scaleY);
-
-    const normalizedSide = Math.min(normalizedWidth, normalizedHeight);
-
-    // Note: with these calculations, the normalised values are off by 3-4 pixels
+    const normalizedX = Math.round(((x + cropStartX) / imgRef.current.width) * refWidth);
+    const normalizedY = Math.round(((y + cropStartY) / imgRef.current.height) * refHeight);
+    const normalizedSide = Math.round(
+      (Math.min(width, height) / imgRef.current.width) * croppedWidth
+    );
 
     const referenceResolution: Resolution = [refWidth, refHeight];
 
@@ -277,7 +264,6 @@ const CollectDataUsingWebcam = ({
 
     console.log("Crop completed:", completedCrop);
     console.log("Image reference:", imgRef.current.width, imgRef.current.height);
-    console.log("Normalized Width:", normalizedWidth, "Normalized Height:", normalizedHeight);
     console.log("Final Normalized Side:", normalizedSide);
     console.log('Updated Region shape:', JSON.stringify(updatedRegion.shape.shape, null, 2));
 
@@ -285,6 +271,7 @@ const CollectDataUsingWebcam = ({
       await updateRegion(updatedRegion);
 
       setRegion(updatedRegion);
+      setSelectedRegion(updatedRegion);
       await setCroppedImageSrc(`${Urls.fetchPhantomCamera}/${selectedCameraId}/region/${updatedRegion.id}/stream`);
       console.log("Cropped image source updated.");
     } catch (error) {
@@ -294,6 +281,8 @@ const CollectDataUsingWebcam = ({
       setIsUpdating(false);
     }
   };
+
+
 
   const updateRegion = async (regionToUpdate: RegionStructure) => {
     try {
@@ -340,6 +329,20 @@ const CollectDataUsingWebcam = ({
         ctx?.drawImage(tempImage, 0, 0, canvas.width, canvas.height);
         const imageUrl = canvas.toDataURL("image/jpeg");
         setCapturedImages((prevImages) => [...prevImages, imageUrl]);
+        //   setCardCapturedImages(prev => ({
+        //     ...prev,
+        //     [classCardAnnotation?.annotation_id]: [...(prev[classCardAnnotation?.annotation_id] || []), ...capturedImages],
+        // }));
+        // setclassCardAnnotation({
+        //   ...classCardAnnotation,
+        //   annotation: {
+        //     ...classCardAnnotation.annotation,
+        //     [classCardAnnotationId]: {
+        //       ...classCardAnnotation.annotation[classCardAnnotationId],
+        //       images: [...classCardAnnotation.annotation[classCardAnnotationId].images, ...capturedImages]
+        //     }
+        //   }
+        // });
       };
       tempImage.src = croppedImageSrc;
     } else if (imgRef.current) {
@@ -532,7 +535,6 @@ const CollectDataUsingWebcam = ({
                 onCheckedChange={() => handleCameraSelect(camera.id)}
               >
                 {camera.name}
-                Camera1
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>
@@ -568,6 +570,7 @@ const CollectDataUsingWebcam = ({
             src={croppedImageSrc}
             alt="Cropped Stream View"
             className="border border-gray-300"
+            // style={{ maxWidth: '100%' }}
             onError={() => console.error("Error loading cropped stream.")}
           />
         ) : (

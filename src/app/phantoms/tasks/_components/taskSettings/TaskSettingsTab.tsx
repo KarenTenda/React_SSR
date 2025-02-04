@@ -9,6 +9,7 @@ import { TaskStructure } from "../../structure/TaskStructure"
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import AdvancedTaskSettings from "./advancedTab/AdvancedTaskSettings";
+import BasicTaskSettingsForm from "./basicTab/BasicTaskSettings";
 
 export function TaskSettingsTab({ task }: { task: TaskStructure | null }) {
     const [activeTab, setActiveTab] = useState("basic");
@@ -30,7 +31,7 @@ export function TaskSettingsTab({ task }: { task: TaskStructure | null }) {
                     className={`h-full flex items-center justify-center ${activeTab === "basic" ? "block" : "hidden"
                         }`}
                 >
-                    <p className="text-gray-500">Task settings are under development.</p>
+                    <BasicTaskSettingsForm task={task} />
                 </TabsContent>
                 <TabsContent
                     value="advanced"

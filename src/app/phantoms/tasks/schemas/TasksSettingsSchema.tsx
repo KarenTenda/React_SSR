@@ -1,85 +1,87 @@
 import { z } from "zod";
-import { TaskTypes } from "../types/TaskTypes";
+import { InferenceSpecificTypes, TaskTypes, TrackingSpecificTypes } from "../types/TaskTypes";
+import { CheckingSpecificTypes } from "../types/TaskTypes";
+import { spec } from "node:test/reporters";
 
-// Base Strategy Schema
-const BaseStrategySchema = z.object({
-  strategy_type: z.string(),
-  filters: z.array(
-    z.object({
-      filter: z.object({
-        filter_type: z.string(),
-        indices: z.array(z.number()),
-      }),
-    })
-  ),
-  condition: z.object({
-    condition: z.object({
-      condition_type: z.string(),
-    }),
+const ClientConfigSchema = z.object({
+  adapter_id: z.string(),
+  adapter_name: z.string(),
+  host: z.string(),
+  port: z.number(),
+  timeout: z.number(),
+});
+
+const PipelineElementSchema = z.object({
+  name: z.string(),
+  parameters: z.record(z.any()),
+});
+
+const VisualizerConfigSchema = z.object({
+  visualize: z.boolean(),
+  show_confidence: z.boolean().optional(),
+  show_class_label: z.boolean().optional(),
+  class_label_to_color_map: z.record(z.array(z.number())).optional(),
+  class_label_to_display_name_map: z.record(z.array(z.number())).optional(),
+});
+
+export const InferenceTaskSchema = z.object({
+  id: z.string(),
+  type: z.nativeEnum(TaskTypes),
+  specific_type: z.nativeEnum(InferenceSpecificTypes),
+  camera_id: z.string(),
+  client_config: ClientConfigSchema,
+  result_processing_pipeline: z.array(PipelineElementSchema),
+  id_assignment_model: z.object({
+    value: z.string(),
+  }),
+  model_id: z.string(),
+  reference_region_ids: z.array(z.string()),
+  result_handler_model: z.object({
+    handler_type: z.string(),
+  }),
+  adjust_keypoints_to_bbox: z.boolean().optional(),
+  visualizer: VisualizerConfigSchema,
+});
+
+const CheckingConfigSchema = z.object({
+  id: z.string(),
+  reference_component_id: z.string(),
+  reference_component_result_id: z.string(),
+  target_label: z.string(),
+  timeout: z.number().optional(),
+});
+
+export const CheckingTaskSchema = z.object({
+  id: z.string(),
+  type: z.nativeEnum(TaskTypes),
+  specific_type: z.nativeEnum(CheckingSpecificTypes),
+  camera_id: z.string(),
+  checking_configs: z.array(CheckingConfigSchema),
+  result_handler_model: z.object({
+    handler_type: z.string(),
   }),
 });
 
-// Presence Strategy Schema
-const PresenceStrategySchema = BaseStrategySchema.extend({});
-
-// Inside Region Strategy Schema
-const InsideRegionStrategySchema = BaseStrategySchema.extend({
-  region_id: z.string(),
-});
-
-// Outside Region Strategy Schema
-const OutsideRegionStrategySchema = BaseStrategySchema.extend({
-  region_id: z.string(),
-});
-
-// Keypoint Task Schema
-const KeypointTaskSchema = z.object({
-  component_type: z.literal("KEYPOINT"),
+const TrackingConfigSchema = z.object({
+  id: z.string(),
   reference_component_id: z.string(),
-  strategy: z.union([PresenceStrategySchema, InsideRegionStrategySchema]),
+  reference_component_result_id: z.string(),
+  reference_component_sub_id: z.string(),
+  target_component_id: z.string(),
+  target_component_result_id: z.string(),
+  target_component_result_sub_ids: z.array(z.string()),
 });
 
-// Label Checking Strategy Model Schema
-const LabelCheckingStrategyModelSchema = z.object({
-  strategy_type: z.string(),
-  label: z.string(),
-});
-
-// IO Mapping Checking Strategy Model Schema
-const IOMappingCheckingStrategyModelSchema = z.object({
-  strategy_type: z.string(),
-  io_mapping: z.record(z.string(), z.array(z.boolean())),
-});
-
-// Classification Task Schema
-const ClassificationTaskSchema = z.object({
-  component_type: z.literal("CLASSIFICATION"),
-  reference_component_id: z.string(),
-  strategy: z.union([LabelCheckingStrategyModelSchema, IOMappingCheckingStrategyModelSchema]),
-});
-
-// Inference Checking Task Schema
-const InferenceCheckingTaskSchema = z.object({
-  component_type: z.literal("INFERENCE"),
-  component: z.union([KeypointTaskSchema, ClassificationTaskSchema]),
-});
-
-// Checking Task Schema
-const CheckingTaskSchema = z.object({
-  component_type: z.literal("CHECKING"),
-  component: InferenceCheckingTaskSchema,
-});
-
-// Task Structure Schema
-const TaskStructureSchema = z.object({
+export const TrackingTaskSchema = z.object({
   id: z.string(),
   type: z.nativeEnum(TaskTypes),
-  specific_type: z.string(),
+  specific_type: z.nativeEnum(TrackingSpecificTypes),
+  tracking_configs: z.array(TrackingConfigSchema),
+  result_handler_model: z.object({
+    handler_type: z.string(),
+  }),
 });
 
-export const TasksSchema = z.union([
-  TaskStructureSchema,
-  CheckingTaskSchema,
-  KeypointTaskSchema,
-  ClassificationTaskSchema,
-]);
+
+
+export type TaskSettings = z.infer<typeof InferenceTaskSchema | typeof CheckingTaskSchema | typeof TrackingTaskSchema>;
