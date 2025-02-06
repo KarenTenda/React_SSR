@@ -46,7 +46,11 @@ import {
   LayoutList,
   Workflow,
   ArrowUpNarrowWide,
-  ArrowDownNarrowWide
+  ArrowDownNarrowWide,
+  Waypoints,
+  NetworkIcon,
+  WorkflowIcon,
+  CpuIcon,
 } from 'lucide-react';
 
 export {
@@ -58,6 +62,10 @@ export {
   Layers as PhantomsIcon,
   Lock as RolesIcon,
   KeyRound as AuthIcon,
+  Waypoints as ModelsIcon,
+  NetworkIcon as OperationsIcon,
+  WorkflowIcon as WorkflowsIcon,
+  CpuIcon as DevicesIcon,
   Plus as AddIcon,
   Trash2 as DeleteIcon,
   ArrowLeft as BackIcon,

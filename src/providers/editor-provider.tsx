@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Dispatch, createContext, useContext } from 'react'
-import { EditorNodeType, EditorActions, EditorEdgeType } from '@/app/phantoms/workflows/types/EditorCanvasTypes';
+import { EditorNodeType, EditorActions, EditorEdgeType } from '@/app/operations/workflows/types/EditorCanvasTypes';
 
 export type EditorNode = EditorNodeType
 export type EditorNodeEdge = EditorEdgeType

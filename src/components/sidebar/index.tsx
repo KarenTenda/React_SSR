@@ -7,8 +7,12 @@ import { useState } from "react";
 import {
   CamerasIcon, HomeIcon, PhantomsIcon, RolesIcon,
   DatabaseIcon, DocumentationIcon, SettingsIcon, 
-  DarkModeIcon, ArrowLeftIcon, ArrowRightIcon 
+  DarkModeIcon, ArrowLeftIcon, ArrowRightIcon, ModelsIcon,
+  WorkflowIcon,
+  OperationsIcon,
+  DevicesIcon
 } from "@/public/assets/Icons";
+import { UserCog2Icon } from "lucide-react";
 
 interface ISidebarItem {
   name: string;
@@ -20,6 +24,7 @@ interface ISidebarItem {
 interface ISubItem {
   name: string;
   path: string;
+  icon?: React.ElementType;
 }
 
 interface SidebarProps {
@@ -39,27 +44,26 @@ const items: ISidebarItem[] = [
     icon: CamerasIcon,
   },
   {
-    name: "Phantoms",
-    path: "/phantoms",
-    icon: PhantomsIcon,
+    name: "Operations",
+    path: "/operations",
+    icon: OperationsIcon,
     items: [
       {
-        name: "Tasks",
-        path: "/phantoms/tasks",
-      },
-      {
         name: "Workflows",
-        path: "/phantoms/workflows",
+        path: "/operations/workflows",
+        icon: WorkflowIcon,
       },
       {
-        name: "Models",
-        path: "/phantoms/models",
-      },
-      {
-        name: "Regions",
-        path: "/phantoms/regions",
-      },
+        name: "Virtual devices",
+        path: "/operations/virtual_devices",
+        icon: DevicesIcon,
+      }
     ],
+  },
+  {
+    name: "Models",
+    path: "/models",
+    icon: ModelsIcon,
   },
   {
     name: "User Guide",
@@ -74,10 +78,12 @@ const items: ISidebarItem[] = [
       {
         name: "Users",
         path: "/rolesPermissions/users",
+        icon: UserCog2Icon,
       },
       {
         name: "Authentication",
         path: "/rolesPermissions/authenticaton",
+        icon: RolesIcon,
       }
     ],
   },
@@ -94,10 +100,12 @@ const items: ISidebarItem[] = [
       {
         name: "General",
         path: "/settings/general",
+        icon: SettingsIcon,
       },
       {
         name: "Notifications",
         path: "/settings/notifications",
+        icon: SettingsIcon,
       },
     ],
   },

@@ -1,4 +1,5 @@
 "use client";
+
 import { useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -14,12 +15,13 @@ interface ISidebarItem {
 interface ISubItem {
   name: string;
   path: string;
+  icon?: React.ElementType;
 }
 
 interface SidebarItemProps {
   item: ISidebarItem;
-  isCollapsed: boolean;
-  isExpanded: boolean;
+  isCollapsed: boolean; //collapsing the sidebar
+  isExpanded: boolean; //expanding the subitems
   onClickItem: () => void;
   onSubItemClick: () => void;
 }
@@ -31,16 +33,18 @@ const SidebarItem = ({ item, isCollapsed, isExpanded, onClickItem, onSubItemClic
 
   const onClick = () => {
     if (items && items.length > 0) {
-      onClickItem();  // Handle expanding/collapsing subitems
+        onClickItem(); 
     } else {
-      onSubItemClick();  // Collapse any expanded items if a different main item is clicked
+      onSubItemClick(); // Collapse any expanded items if a different main item is clicked
       router.push(path);
     }
   };
 
   const handleSubItemClick = (path: string) => {
     router.push(path);
-    onSubItemClick(); // Collapse the subitems
+    if (isCollapsed) { // Collapse the sidebar if it's collapsed
+    onSubItemClick(); 
+    }
   };
 
   const isActive = useMemo(() => {
@@ -50,11 +54,12 @@ const SidebarItem = ({ item, isCollapsed, isExpanded, onClickItem, onSubItemClic
     return path === pathname;
   }, [items, path, pathname]);
 
+
   return (
     <>
       <div
         className={`flex items-center p-3 rounded-lg cursor-pointer justify-between
-          hover:bg-[#FA8072]
+          hover:bg-[#FFC1B6]
           ${isActive ? "bg-[#FA8072]" : ""}
           ${isCollapsed && isExpanded ? "relative z-20 bg-[#FA8072] shadow-lg" : ""}`}
         onClick={onClick}
@@ -70,7 +75,8 @@ const SidebarItem = ({ item, isCollapsed, isExpanded, onClickItem, onSubItemClic
       </div>
       {isExpanded && items && items.length > 0 && (
         <div 
-          className={`flex flex-col space-y-2 ${isCollapsed ? "absolute bg-red-200 p-4 rounded-lg left-16" : "ml-10"}`}  
+          className={`flex flex-col space-y-2 
+            ${isCollapsed ? "absolute bg-red-200 p-2 rounded-lg left-16 w-48 shadow-md" : "ml-10"}`}  
           style={{ top: isCollapsed ? "auto" : "auto" }}  
         >
           {items.map((subItem) => (
@@ -79,7 +85,7 @@ const SidebarItem = ({ item, isCollapsed, isExpanded, onClickItem, onSubItemClic
               className="cursor-pointer"
               onClick={() => handleSubItemClick(subItem.path)}
             >
-              <SubMenuItem item={subItem} />
+              <SubMenuItem item={subItem} isCollapsed={isCollapsed} />
             </div>
           ))}
         </div>
