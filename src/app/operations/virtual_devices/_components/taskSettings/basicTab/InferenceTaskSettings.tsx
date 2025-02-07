@@ -41,9 +41,11 @@ import { DeleteIcon, PencilIcon } from '@/public/assets/Icons';
 import { Button } from '@/components/ui/button';
 import UpdateRegion from './updateRegion/UpdateRegion';
 import { RegionStructure } from '@/app/operations/regions/structures/RegionStructure';
+import { Watch } from 'lucide-react';
+import { CameraStructure } from '@/app/cameras/structure/CameraStructure';
 
-function InferenceTaskSettings({ task, regions, savedRegionIDs }: {
-    task: InferenceTask | null, regions: RegionStructure[], savedRegionIDs: string[]
+function InferenceTaskSettings({ task, regions, savedRegionIDs, cameraSettings }: {
+    task: InferenceTask | null, regions: RegionStructure[], savedRegionIDs: string[], cameraSettings: CameraStructure
 }) {
     const { control, setValue, watch } = useFormContext();
     const clientConfig = watch('client_config');
@@ -220,7 +222,11 @@ function InferenceTaskSettings({ task, regions, savedRegionIDs }: {
                                     </DialogHeader>
                                     <div className="flex flex-row gap-4">
                                         <UpdateRegion 
-                                            savedRegions={regions} regionId={regionId} savedRegionIDs={savedRegionIDs} 
+                                            savedRegions={regions} 
+                                            regionId={regionId} 
+                                            savedRegionIDs={savedRegionIDs} 
+                                            cameraId={task?.camera_id || ""} 
+                                            cameraSettings={cameraSettings}
                                         />
                                     </div>
                                     {/* <DialogFooter className="mt-4 flex justify-end">

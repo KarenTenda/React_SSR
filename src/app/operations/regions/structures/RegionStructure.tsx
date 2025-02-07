@@ -1,6 +1,7 @@
 export enum GeometryType {
     SQUARE = 3,
     RECTANGLE = 4,
+    POLYGON = 2
 }
 
 export interface Center {

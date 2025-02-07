@@ -23,9 +23,13 @@ import InferenceTaskSettings from './InferenceTaskSettings';
 import useRegionService from '@/app/operations/regions/hooks/useRegions';
 import { InferenceTask } from '../../../structure/inference/InferenceStructure';
 import { CheckingTask } from '../../../structure/CheckingStructure';
+import { CameraStructure } from '@/app/cameras/structure/CameraStructure';
+import useCameraService from '@/app/cameras/hooks/useCameraService';
 
 function BasicTaskSettingsForm({ task }: { task: TaskStructure | InferenceTask | CheckingTask | null }) {
     const [regions, savedRegionIDs] = useRegionService()
+    const [savedCameras, savedCameraIds] = useCameraService();
+    const CameraSettings = savedCameras.find((camera) => camera.id === task?.camera_id);
     const { toast } = useToast();
 
     const getSchema = (task: TaskStructure | null) => {
@@ -136,6 +140,7 @@ function BasicTaskSettingsForm({ task }: { task: TaskStructure | InferenceTask |
                             regions={regions}
                             task={task as InferenceTask} 
                             savedRegionIDs={savedRegionIDs} 
+                            cameraSettings={CameraSettings as CameraStructure}
                             />
                         )}
 

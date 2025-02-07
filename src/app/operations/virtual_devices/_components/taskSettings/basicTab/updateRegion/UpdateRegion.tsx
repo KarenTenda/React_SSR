@@ -10,18 +10,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
+import { CameraStructure } from "@/app/cameras/structure/CameraStructure";
 
-const cameraResolution = { width: 1280, height: 720 }; // Backend resolution
-const containerSize = { width: 640, height: 360 }; // UI container size
+// const cameraResolution = { width: 1280, height: 720 };
+const containerSize = { width: 640, height: 360 };
 
-function UpdateRegion({ savedRegions, regionId, savedRegionIDs }: { savedRegions: RegionStructure[]; regionId: string, savedRegionIDs: string[] }) {
+function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, cameraSettings }: {
+    savedRegions: RegionStructure[]; regionId: string, savedRegionIDs: string[], cameraId: string, cameraSettings: CameraStructure
+}) {
     const [regions, setRegions] = useState<RegionStructure[]>(savedRegions);
     const [regionIDs, setRegionIDs] = useState<string[]>(savedRegionIDs);
     const [selectedRegion, setSelectedRegion] = useState(regionId);
     const [crop, setCrop] = useState<Crop | null>(null);
-    const imageSrc = `${Urls.fetchPhantomCameras}/Camera1/stream`;
+    const imageSrc = `${Urls.fetchPhantomCameras}/${cameraId}/stream`;
     const [shape, setShape] = useState<any>(null);
     const [updatedSettings, setUpdatedSettings] = useState<any>(null);
+    const [polygonPoints, setPolygonPoints] = useState<string>("");
+    const [polygonDots, setPolygonDots] = useState<{ x: number; y: number }[]>([]);
 
     // **1️⃣ Fetch the latest regions every 5 seconds (Real-time Updates)**
     useEffect(() => {
@@ -50,7 +55,7 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs }: { savedRegions
     useEffect(() => {
         if (!regions.length) return;
         const region = regions.find((r) => r.id === selectedRegion);
-        if (region && region.shape && region.shape.shape.center) {
+        if (region && region.shape && region.shape.shape) {
             setShape(region.shape.shape);
         } else {
             console.warn("Region not found or shape missing:", region);
@@ -62,44 +67,58 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs }: { savedRegions
     useEffect(() => {
         if (!shape || !shape.center) return;
 
-        const isSquare = shape.geometry_type === GeometryType.SQUARE;
-        const width = isSquare ? shape.side ?? 100 : shape.width ?? 100;
-        const height = isSquare ? shape.side ?? 100 : shape.height ?? 100;
-
         // **Scaling Factors**
-        const scaleX = containerSize.width / cameraResolution.width;
-        const scaleY = containerSize.height / cameraResolution.height;
+        const scaleX = containerSize.width / cameraSettings.resolution[0];
+        const scaleY = containerSize.height / cameraSettings.resolution[1];
 
-        // **Convert from center-based to top-left positioning**
-        const adjustedX = shape.center.x * scaleX - (width * scaleX) / 2;
-        const adjustedY = shape.center.y * scaleY - (height * scaleY) / 2;
+        const isSquare = shape.geometry_type === GeometryType.SQUARE;
+        const isPolygon = shape.geometry_type === GeometryType.POLYGON;
 
-        if (!isNaN(adjustedX) && !isNaN(adjustedY) && !isNaN(width) && !isNaN(height)) {
-            setCrop({
-                unit: "px",
-                x: adjustedX,
-                y: adjustedY,
-                width: width * scaleX,
-                height: height * scaleY,
-            });
+        if (isPolygon) {
+            // **Scale Polygon Points**
+            const scaledPoints = shape.points
+                .map((point: { x: number; y: number }) => `${point.x * scaleX},${point.y * scaleY}`)
+                .join(" ");
 
-            setUpdatedSettings({
-                x: shape.center.x,
-                y: shape.center.y,
-                width,
-                height,
-            });
+            setPolygonPoints(scaledPoints);
+
+            // **Store points for displaying dots**
+            setPolygonDots(
+                shape.points.map((point: { x: number; y: number }) => ({
+                    x: point.x * scaleX,
+                    y: point.y * scaleY,
+                }))
+            );
+            setUpdatedSettings({ points: shape.points });
         } else {
-            console.error("Invalid region values:", { adjustedX, adjustedY, width, height });
+            const width = isSquare ? shape.side ?? 100 : shape.width ?? 100;
+            const height = isSquare ? shape.side ?? 100 : shape.height ?? 100;
+
+            // **Convert from center-based to top-left positioning**
+            const adjustedX = shape.center.x * scaleX - (width * scaleX) / 2;
+            const adjustedY = shape.center.y * scaleY - (height * scaleY) / 2;
+
+            if (!isNaN(adjustedX) && !isNaN(adjustedY) && !isNaN(width) && !isNaN(height)) {
+                setCrop({
+                    unit: "px",
+                    x: adjustedX,
+                    y: adjustedY,
+                    width: width * scaleX,
+                    height: height * scaleY,
+                });
+
+                setUpdatedSettings({
+                    x: shape.center.x,
+                    y: shape.center.y,
+                    width,
+                    height,
+                });
+            } else {
+                console.error("Invalid region values:", { adjustedX, adjustedY, width, height });
+            }
         }
 
-        // console.log("Backend Region (Original):", shape);
-        // console.log("UI Region (Scaled & Adjusted):", {
-        //     x: adjustedX,
-        //     y: adjustedY,
-        //     width: width * scaleX,
-        //     height: height * scaleY,
-        // });
+
     }, [shape]);
 
     // **4️⃣ Handle Crop Adjustments**
@@ -111,8 +130,8 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs }: { savedRegions
         if (!pixelCrop) return;
 
         // Reverse scaling back to backend values
-        const scaleX = cameraResolution.width / containerSize.width;
-        const scaleY = cameraResolution.height / containerSize.height;
+        const scaleX = cameraSettings.resolution[0] / containerSize.width;
+        const scaleY = cameraSettings.resolution[1] / containerSize.height;
 
         const updatedX = (pixelCrop.x + pixelCrop.width / 2) * scaleX;
         const updatedY = (pixelCrop.y + pixelCrop.height / 2) * scaleY;
@@ -172,7 +191,13 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs }: { savedRegions
                         zIndex: 10,
                     }}
                 />
-                 </div>
+
+                {polygonPoints && (
+                    <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                        <polygon points={polygonPoints} fill="none" stroke="lime" strokeWidth="2" />
+                    </svg>
+                )}
+            </div>
 
             <div className="flex flex-col gap-3 w-48">
                 <Select value={selectedRegion} onValueChange={setSelectedRegion}>
@@ -187,6 +212,8 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs }: { savedRegions
                         ))}
                     </SelectContent>
                 </Select>
+
+                <Input type="text" value={cameraId} readOnly placeholder="Enter Device Camera Id" />
 
                 <textarea
                     className="w-full h-48 p-2 border border-gray-300 rounded"
