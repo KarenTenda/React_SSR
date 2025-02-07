@@ -4,6 +4,7 @@ import { CameraStructure } from '../structure/CameraStructure';
 import { CameraService } from '../services/CameraService';
 import Urls from '@/lib/Urls';
 import { useToast } from '@/components/ui/use-toast';
+import { ToastAction } from "@/components/ui/toast";
 // import { useError } from '@/components/errorProvider/ErrorProvider';
 
 function useCameraService(): [CameraStructure[], string[]] {
@@ -28,21 +29,28 @@ function useCameraService(): [CameraStructure[], string[]] {
   //   fetchData();
   // }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await CameraService(Urls.fetchPhantomCameras);
-        setSavedCameraIDs(data.map((camera) => camera.id));
-        setCameras(data);
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Uh Oh! Something went wrong",
-          description: "Unable to connect to the server or fetch data",
-        });
-      }
-    };
+  const fetchData = async () => {
+    try {
+      const data = await CameraService(Urls.fetchPhantomCameras);
+      setSavedCameraIDs(data.map((camera) => camera.id));
+      setCameras(data);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Uh Oh! Something went wrong",
+        description: "Unable to connect to the server or fetch camera data",
+        action: (<ToastAction altText="Try again" onClick={handleRetry}>
+          Try again
+        </ToastAction>),
+      });
+    }
+  };
 
+  const handleRetry = () => {
+    fetchData();
+  }
+
+  useEffect(() => {
     fetchData();
   }, []);
 

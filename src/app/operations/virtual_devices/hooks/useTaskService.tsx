@@ -4,27 +4,36 @@ import { TaskStructure } from '../structure/TaskStructure';
 import { TaskService } from '../services/TaskService';
 import Urls from '@/lib/Urls';
 import { useToast } from '@/components/ui/use-toast';
+import { ToastAction } from "@/components/ui/toast";
 
 function useTaskService(): [TaskStructure[], string[]] {
   const [tasks, setTasks] = useState<TaskStructure[]>([]);
   const [savedTaskIDs, setSavedTaskIDs] = useState<string[]>([]);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await TaskService(Urls.fetchPhantomComponents);
-        setSavedTaskIDs(data.map((task) => task.id));
-        setTasks(data);
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Uh Oh! Something went wrong",
-          description: "Unable to connect to the server or fetch data",
-        });
-      }
-    };
+  const fetchData = async () => {
+    try {
+      const data = await TaskService(Urls.fetchPhantomComponents);
+      setSavedTaskIDs(data.map((task) => task.id));
+      setTasks(data);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Uh Oh! Something went wrong",
+        description: "Unable to connect to the server or fetch tasks data",
+        action: (<ToastAction altText="Try again" onClick={handleRetry}>
+          Try again
+        </ToastAction>),
+        duration: 30000,
+      });
+    }
+  };
 
+  const handleRetry = () => {
+    fetchData();
+  }
+
+  useEffect(() => {
     fetchData();
   }, []);
 

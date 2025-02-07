@@ -51,7 +51,7 @@ const Navbar = <T extends object>({
         <div className="flex flex-col gap-3">
             <div className="flex flex-col w-full relative">
                 <div className="inline-flex relative w-full h-auto gap-3 flex-row items-center justify-between px-3 md:px-5">
-                    <h1 className="!m-0 font-medium text-xl text-gray-900">{pageName}</h1>
+                    <h1 className="!m-0 font-medium text-xl text-gray-700 dark:text-gray-300">{pageName}</h1>
                 </div>
             </div>
 

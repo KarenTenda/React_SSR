@@ -220,10 +220,10 @@ function InferenceTaskSettings({ task, regions, savedRegionIDs }: {
                                     </DialogHeader>
                                     <div className="flex flex-row gap-4">
                                         <UpdateRegion 
-                                            regions={regions} regionId={regionId} savedRegionIDs={savedRegionIDs} 
+                                            savedRegions={regions} regionId={regionId} savedRegionIDs={savedRegionIDs} 
                                         />
                                     </div>
-                                    <DialogFooter className="mt-4 flex justify-end">
+                                    {/* <DialogFooter className="mt-4 flex justify-end">
                                         <Button
                                             className={`mt-4 bg-[#FA8072] text-white`}
                                             type="submit"
@@ -233,7 +233,7 @@ function InferenceTaskSettings({ task, regions, savedRegionIDs }: {
                                         >
                                             Submit
                                         </Button>
-                                    </DialogFooter>
+                                    </DialogFooter> */}
                                 </DialogContent>
                             </Dialog>
 
