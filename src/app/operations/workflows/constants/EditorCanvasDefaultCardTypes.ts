@@ -1,7 +1,12 @@
 
 
 export const EditorCanvasDefaultCardTypes = {
-    Camera: { 
+  "Camera Provider": {
+      description:
+        'Allows you to select the camera of interest.',
+      type: 'Action',
+    },
+    "Image Device": { 
         description: 'Returns image data in different formats from a camera.', 
         type: 'Action' 
     },
@@ -10,7 +15,7 @@ export const EditorCanvasDefaultCardTypes = {
         'Shows the region of interest in the image or video.',
       type: 'Action',
     },
-    Inference: {
+    "Inference Device": {
       description: 'Returns inference data from a model.',
       type: 'Action',
     },
@@ -18,11 +23,11 @@ export const EditorCanvasDefaultCardTypes = {
       description: 'Returns a Model ID for the model of interest',
       type: 'Action',
     },
-    Communications: {
+    "Communications Device": {
         description: 'This converts data to kto, vios, or any other format.',
         type: 'Action',
     },
-    Transform: {
+    "Transform Device": {
         description: 'Convert or return original data.',
         type: 'Action',
     }

@@ -7,10 +7,11 @@ interface ClickableIconButtonProps {
   onClick?: () => void;
   tooltipText?: string;
   disabled?: boolean;
+  style?: React.CSSProperties;
 }
 
 const ClickableIconButton = React.forwardRef<HTMLButtonElement, ClickableIconButtonProps>(
-  ({ Icon, onClick, tooltipText, disabled }, ref) => {
+  ({ Icon, onClick, tooltipText, disabled, style }, ref) => {
     return (
       <OverlayTrigger
         placement="bottom"
@@ -22,7 +23,8 @@ const ClickableIconButton = React.forwardRef<HTMLButtonElement, ClickableIconBut
       >
         <Button 
           ref={ref}
-          onClick={onClick} 
+          onClick={onClick}
+          style={style} 
           className={`inline-block px-2 ${
               disabled ? 'text-gray-500 cursor-not-allowed' : 'text-[#FA8072] cursor-pointer'
             }`}

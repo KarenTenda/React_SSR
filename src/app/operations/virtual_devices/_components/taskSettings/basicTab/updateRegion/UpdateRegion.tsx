@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactCrop, { Crop } from "react-image-crop";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import "react-image-crop/dist/ReactCrop.css";
@@ -25,8 +25,8 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
     const imageSrc = `${Urls.fetchPhantomCameras}/${cameraId}/stream`;
     const [shape, setShape] = useState<any>(null);
     const [updatedSettings, setUpdatedSettings] = useState<any>(null);
-    const [polygonPoints, setPolygonPoints] = useState<string>("");
-    const [polygonDots, setPolygonDots] = useState<{ x: number; y: number }[]>([]);
+    const [polygonPoints, setPolygonPoints] = useState<{ x: number; y: number }[]>([]);
+    const draggingIndex = useRef<number | null>(null);
 
     // **1️⃣ Fetch the latest regions every 5 seconds (Real-time Updates)**
     useEffect(() => {
@@ -65,7 +65,7 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
 
     // **3️⃣ Properly scale and position the region**
     useEffect(() => {
-        if (!shape || !shape.center) return;
+        if (!shape) return;
 
         // **Scaling Factors**
         const scaleX = containerSize.width / cameraSettings.resolution[0];
@@ -74,22 +74,17 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
         const isSquare = shape.geometry_type === GeometryType.SQUARE;
         const isPolygon = shape.geometry_type === GeometryType.POLYGON;
 
+        console.log("Shape:", shape);
+
         if (isPolygon) {
-            // **Scale Polygon Points**
-            const scaledPoints = shape.points
-                .map((point: { x: number; y: number }) => `${point.x * scaleX},${point.y * scaleY}`)
-                .join(" ");
-
-            setPolygonPoints(scaledPoints);
-
-            // **Store points for displaying dots**
-            setPolygonDots(
+            setPolygonPoints(
                 shape.points.map((point: { x: number; y: number }) => ({
                     x: point.x * scaleX,
                     y: point.y * scaleY,
                 }))
             );
             setUpdatedSettings({ points: shape.points });
+            console.log("Polygon Points:", shape.points);
         } else {
             const width = isSquare ? shape.side ?? 100 : shape.width ?? 100;
             const height = isSquare ? shape.side ?? 100 : shape.height ?? 100;
@@ -156,6 +151,35 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
     const handleSubmit = async () => {
         if (!updatedSettings) return;
 
+        let new_shape;
+
+        switch (shape.geometry_type) {
+            case GeometryType.SQUARE:
+                new_shape = {
+                    geometry_type: GeometryType.SQUARE,
+                    side: updatedSettings.width,
+                    center: { x: updatedSettings.x, y: updatedSettings.y },
+                }
+                break;
+            case GeometryType.RECTANGLE:
+                new_shape = {
+                    geometry_type: GeometryType.RECTANGLE,
+                    width: updatedSettings.width,
+                    height: updatedSettings.height,
+                    center: { x: updatedSettings.x, y: updatedSettings.y },
+                }
+                break;
+            case GeometryType.POLYGON:
+                new_shape = {
+                    geometry_type: GeometryType.POLYGON,
+                    points: updatedSettings.points,
+                }
+                break;
+            default:
+                console.error("Invalid geometry type:", shape.geometry_type);
+                return;
+        }
+
         await axios.post(`${Urls.fetchRegions}/`, {
             region: {
                 id: uuidv4(),
@@ -163,11 +187,7 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
                 enabled: true,
                 reference_resolution: [1280, 720],
                 shape: {
-                    shape: {
-                        geometry_type: GeometryType.SQUARE,
-                        side: updatedSettings.width,
-                        center: { x: updatedSettings.x, y: updatedSettings.y },
-                    },
+                    shape: new_shape
                 },
             },
         });
@@ -175,13 +195,40 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
         console.log("Region submitted successfully!");
     };
 
+    // **4️⃣ Handle Polygon Dragging**
+    const handleMouseDown = (index: number) => {
+        draggingIndex.current = index;
+    };
+
+    const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+        if (draggingIndex.current === null) return;
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const newX = ((event.clientX - rect.left) / rect.width) * containerSize.width;
+        const newY = ((event.clientY - rect.top) / rect.height) * containerSize.height;
+
+        setPolygonPoints((prev) => {
+            const newPoints = [...prev];
+            newPoints[draggingIndex.current!] = { x: newX, y: newY };
+        
+            // Update settings state so textarea updates dynamically
+            setUpdatedSettings({ points: newPoints });
+        
+            return newPoints;
+        });
+    };
+
+    const handleMouseUp = () => {
+        draggingIndex.current = null;
+    };
+
     return (
         <div className="flex gap-5">
-            <div className="relative border rounded-lg overflow-hidden" style={{ width: containerSize.width, height: containerSize.height }}>
-                <ReactCrop crop={crop ?? undefined} onChange={onCropChange} onComplete={onCropComplete} keepSelection>
-                    <img src={imageSrc} alt="Camera Stream" width={containerSize.width} height={containerSize.height} />
-                </ReactCrop>
-
+            <div className="relative border rounded-lg overflow-hidden"
+                style={{ width: containerSize.width, height: containerSize.height }}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+            >
                 <div
                     className="absolute top-1/2 left-1/2 w-[15px] h-[15px] border border-red-500"
                     style={{
@@ -192,9 +239,36 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
                     }}
                 />
 
-                {polygonPoints && (
-                    <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                        <polygon points={polygonPoints} fill="none" stroke="lime" strokeWidth="2" />
+                {shape && (shape.geometry_type === GeometryType.RECTANGLE || shape.geometry_type === GeometryType.SQUARE) && (
+                    <ReactCrop crop={crop ?? undefined} onChange={onCropChange} onComplete={onCropComplete} keepSelection>
+                        <img src={imageSrc} alt="Camera Stream" width={containerSize.width} height={containerSize.height} />
+                    </ReactCrop>
+                )}
+
+                {(polygonPoints.length > 0 && shape.geometry_type === GeometryType.POLYGON) && (
+                    <svg
+                        className="absolute top-0 left-0 w-full h-full pointer-events-auto"
+                        onMouseMove={handleMouseMove}
+                    >
+                        <polygon
+                            points={polygonPoints.map((p) => `${p.x},${p.y}`).join(" ")}
+                            fill="none"
+                            stroke="lime"
+                            strokeWidth="2"
+                        />
+
+                        {/* Draggable Polygon Points */}
+                        {polygonPoints.map((point, index) => (
+                            <circle
+                                key={index}
+                                cx={point.x}
+                                cy={point.y}
+                                r="5"
+                                fill="red"
+                                style={{ cursor: "grab" }}
+                                onMouseDown={() => handleMouseDown(index)}
+                            />
+                        ))}
                     </svg>
                 )}
             </div>

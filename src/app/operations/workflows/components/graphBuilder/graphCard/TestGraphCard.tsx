@@ -30,11 +30,20 @@ const TestGraphCard = ({ description, id, name, publish }: Props) => {
 //     if (response) toast.message(response)
 //   }
 
+  const graphProps = {
+    name,
+    description,
+    id,
+    publish,
+  }
+
   return (
     <Card className="flex w-full items-center justify-between">
       <CardHeader className="flex flex-col gap-4">
-      <Link href={`/operations/workflows/components/graphBuilder/editor/${id}`}>
-          <div className="flex flex-row gap-2">
+      <Link href={`
+        /operations/workflows/components/graphBuilder/editor/${id}?graphProps=${encodeURIComponent(JSON.stringify(graphProps))}`}
+      >
+      <div className="flex flex-row gap-2">
             {/* <Image
               src="/googleDrive.png"
               alt="Google Drive"

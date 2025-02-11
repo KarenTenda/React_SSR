@@ -9,7 +9,28 @@ export const EditorCanvasDefaultHandleData: {
       outputHandles: HandleInfo[];
     };
   } = {
-    Camera: {
+    'Camera Provider': {
+        inputs: 1,
+        outputs: 1,
+        inputHandles: [],
+        outputHandles: [
+            {
+                id: uuidv4(),
+                type: 'source',
+                datatype: 'string',
+                dataTypeColor: 'string',
+                data: { cameraId: '' },
+            },
+            {
+                id: uuidv4(),
+                type: 'source',
+                datatype: 'ImageObject',
+                dataTypeColor: 'ImageObject',
+                data: { cameraObject: null },
+            }
+        ],
+    },
+    "Image Device": {
         inputs: 0,
         outputs: 3,
         inputHandles: [],
@@ -65,7 +86,7 @@ export const EditorCanvasDefaultHandleData: {
             },
         ],
     },
-    Inference: {
+    "Inference Device": {
         inputs: 3,
         outputs: 1,
         inputHandles: [
@@ -107,7 +128,7 @@ export const EditorCanvasDefaultHandleData: {
             },
         ],
     },
-    Transform: {
+    "Transform  Device": {
         inputs: 1,
         outputs: 1,
         inputHandles: [
@@ -133,7 +154,7 @@ export const EditorCanvasDefaultHandleData: {
             },
         ],
     },
-    Communications: {
+    "Communications Device": {
         inputs: 1,
         outputs: 1,
         inputHandles: [

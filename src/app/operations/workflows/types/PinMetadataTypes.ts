@@ -1,16 +1,16 @@
 import { CameraStructure } from "@/app/cameras/structure/CameraStructure";
 
-export type DataTypes = 
-    | 'string' 
-    | 'number' 
-    | 'boolean' 
-    | 'object' 
-    | 'array' 
-    | 'any' 
-    | 'bytes' 
+export type DataTypes =
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'object'
+    | 'array'
+    | 'any'
+    | 'bytes'
     | 'ImageObject'
     | 'InferenceResult';
-    
+
 
 export type HandleTypes = 'source' | 'target';
 
@@ -24,12 +24,17 @@ export const DataTypesColors = {
     'any': '#95A5A6',          // Neutral Gray
     'ImageObject': '#F1C40F',  // Bright Yellow
     'InferenceResult': '#F39C12', // Golden Orange
-  };
+};
 
-export type CameraNodeOutputData =
-    | { cameraId: string }  
-    | { cameraObject: CameraStructure | null }  
-    | { cameraImage: string };  
+export type CameraProviderOutputData = {
+    cameraId: string;
+    cameraObject: CameraStructure | null;
+}
+
+export type ImageNodeOutputData =
+    | { cameraId: string }
+    | { cameraObject: CameraStructure | null }
+    | { cameraImage: string };
 
 export type ModelProviderOutputData = {
     modelId: string;
@@ -45,12 +50,13 @@ export type InferenceResultMetadata = {
     type: string
     results: []
     regionID: string
-    cameraID: string 
+    cameraID: string
     modelID: string
 }
-  
-export type HandleMetadata = 
-    | CameraNodeOutputData
+
+export type HandleMetadata =
+    | CameraProviderOutputData
+    | ImageNodeOutputData
     | ModelProviderOutputData
     | RegionProviderOutputData
     | InferenceResultMetadata
@@ -62,7 +68,7 @@ export type HandleInfo = {
     type: HandleTypes;
     datatype: DataTypes;
     dataTypeColor: keyof typeof DataTypesColors;
-    data: HandleMetadata;
+    data?: HandleMetadata;
     settings?: {
         immutable: boolean;
     }

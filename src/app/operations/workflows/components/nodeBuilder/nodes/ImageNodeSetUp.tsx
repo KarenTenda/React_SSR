@@ -7,7 +7,7 @@ import { CameraStructure } from '@/app/cameras/structure/CameraStructure';
 import Urls from '@/lib/Urls';
 import { useEditor } from '@/providers/editor-provider';
 
-const CameraNodeSettings = ({
+const ImageNodeSettings = ({
   selectedNode,
   // onUpdate,
 }: {
@@ -111,4 +111,4 @@ const CameraNodeSettings = ({
   );
 };
 
-export default CameraNodeSettings;
+export default ImageNodeSettings;

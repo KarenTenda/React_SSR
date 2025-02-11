@@ -58,6 +58,7 @@ const GraphBuilderEditor = () => {
     }, [])
 
     const onNodesChange = useCallback(
+        console.log('nodes change'),
         (changes: NodeChange[]) => {
             setNodes((nds) => {
                 const updatedNodes = applyNodeChanges(changes, nds);
@@ -95,7 +96,7 @@ const GraphBuilderEditor = () => {
                     ...targetNode.data.metadata,
                     inputHandles: targetNode.data.metadata.inputHandles?.map(handle =>
                         handle.id === targetHandle
-                            ? { ...handle, data: sourceHandleData.data }
+                            ? { ...handle, data: sourceHandleData.data } // Assign the data
                             : handle
                     ),
                 },
@@ -114,18 +115,11 @@ const GraphBuilderEditor = () => {
 
     const onConnect = useCallback((params: Edge | Connection) => {
         const { source, target, sourceHandle, targetHandle } = params;
-        // console.log('source', source)
-        // console.log('target', target)
-        // console.log('sourceHandle', sourceHandle)
-        // console.log('targetHandle', targetHandle)
-        console.log('Nodes:', nodes);
-        const newEdge = { id: uuidv4(), source, target, sourceHandle, targetHandle };
-        console.log('New Edge:', newEdge);
+
+        console.log('Connection Params:', params);
 
         const sourceNode = nodes.find(node => node.id === source);
         const targetNode = nodes.find(node => node.id === target);
-
-        console.log('Source Node:', sourceNode);
 
         if (!sourceNode || !targetNode) return;
 
@@ -137,9 +131,10 @@ const GraphBuilderEditor = () => {
             propagateSourceDataToTarget(targetNode, targetHandle, sourceHandleData);
         }
 
-        setEdges((eds) => [...eds, newEdge]);
+        setEdges((eds) => [...eds, { id: uuidv4(), source, target, sourceHandle, targetHandle }]);
         setHandleInfo(null);
     }, [nodes]);
+
 
     const onConnectEnd = useCallback(() => {
         setHandleInfo(null);
@@ -220,6 +215,7 @@ const GraphBuilderEditor = () => {
 
     const handleClickCanvas = () => {
         console.log("current selected node", state.editor.selectedNode.data.metadata.outputHandles)
+        console.log("existing editor elements", state.editor.elements)
         if (!state.editor.selectedNode.id) {
             dispatch({
                 type: 'SELECTED_ELEMENT',
@@ -262,15 +258,16 @@ const GraphBuilderEditor = () => {
         () => ({
             // Action: DefaultEditorCanvasCard,
             // Trigger: DefaultEditorCanvasCard,
-            Camera: DefaultEditorCanvasCard,
+            'Camera Provider': DefaultEditorCanvasCard,
+            "Image Device": DefaultEditorCanvasCard,
             // Condition: DefaultEditorCanvasCard,
             // AI: DefaultEditorCanvasCard,
             'Region Provider': DefaultEditorCanvasCard,
-            Inference: DefaultEditorCanvasCard,
-            Transform: DefaultEditorCanvasCard,
+            "Inference Device": DefaultEditorCanvasCard,
+            "Transform Device": DefaultEditorCanvasCard,
             'Model Provider': DefaultEditorCanvasCard,
             // Discord: DefaultEditorCanvasCard,
-            // Communications: DefaultEditorCanvasCard,
+            "Communications Device": DefaultEditorCanvasCard,
             // 'Google Drive': DefaultEditorCanvasCard,
             // Wait: DefaultEditorCanvasCard,
             // Interval: DefaultEditorCanvasCard,
@@ -377,12 +374,12 @@ const GraphBuilderEditor = () => {
                                         isValidConnection={() => true}
                                     >
                                         <Controls position="top-left" />
-                                        <MiniMap
+                                        {/* <MiniMap
                                             position="bottom-left"
                                             className="!bg-background"
                                             zoomable
                                             pannable
-                                        />
+                                        /> */}
                                         <Background
                                             // @ts-ignore
                                             variant="dots"

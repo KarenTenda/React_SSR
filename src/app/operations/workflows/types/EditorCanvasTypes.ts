@@ -2,20 +2,21 @@ import { CameraStructure } from "@/app/cameras/structure/CameraStructure";
 import { HandleInfo, NodeMetadata } from "./PinMetadataTypes";
 
 export type EditorNodeSpecificTypes =
-    | 'Camera'
+    | 'Camera Provider'
+    | 'Image Device'
     | 'Region Provider'
-    | 'Inference'
+    | 'Inference Device'
     | 'Model Provider'
-    | 'Communications'
-    | 'Transform'
-    // | 'Condition'
-    // | 'AI'
-    // | 'Interval'
-    // | 'Google Drive'
-    // | 'Count'
-    // | 'Trigger'
-    // | 'Action'
-    // | 'Wait'
+    | 'Communications Device'
+    | 'Transform Device'
+// | 'Condition'
+// | 'AI'
+// | 'Interval'
+// | 'Google Drive'
+// | 'Count'
+// | 'Trigger'
+// | 'Action'
+// | 'Wait'
 
 export type EditorNodeTypes =
     | 'Standard'

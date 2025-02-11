@@ -27,7 +27,7 @@ const initialEditorState: EditorState['editor'] = {
     edges: [],
     selectedNode: {
         id: '',
-        type: 'Trigger',
+        type: 'Camera Provider',
         position: {
             x: 0,
             y: 0,
@@ -43,7 +43,7 @@ const initialEditorState: EditorState['editor'] = {
                 inputHandles: [],
                 outputHandles: [],
             },
-            specificType: 'Trigger',
+            specificType: 'Camera Provider',
         },
     },
 }
@@ -69,30 +69,33 @@ const editorReducer = (state: EditorState = initialState, action: EditorActions)
                     edges: action.payload.edges || state.editor.edges,
                 },
             }
-        case 'SELECTED_ELEMENT':
-            console.log('Selected Element:', action.payload.element);
+        case 'SELECTED_ELEMENT': {
+            const updatedNode = state.editor.elements.find(node => node.id === action.payload.element.id);
+
             return {
                 ...state,
                 editor: {
                     ...state.editor,
-                    selectedNode: action.payload.element,
+                    selectedNode: updatedNode ?? action.payload.element,
                 },
-            }
+            };
+        }
+
         case 'UPDATE_NODE': {
             const updatedElements = action.payload.elements;
             const updatedSelectedNode = updatedElements.find(
                 (node) => node.id === state.editor.selectedNode?.id
             );
-        
+
             return {
                 ...state,
                 editor: {
                     ...state.editor,
                     elements: updatedElements,
-                    selectedNode: updatedSelectedNode || state.editor.selectedNode,
+                    selectedNode: updatedSelectedNode ?? state.editor.selectedNode,
                 },
             };
-        } 
+        }
         case 'SELECTED_HANDLE': {
             const { nodeId, element } = action.payload;
 

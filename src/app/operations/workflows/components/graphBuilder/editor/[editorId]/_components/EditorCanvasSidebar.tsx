@@ -21,10 +21,11 @@ import {
 } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import useCameraService from '@/app/cameras/hooks/useCameraService'
-import CameraNodeSettings from '../../../../nodeBuilder/nodes/CameraNodeSetUp'
+import ImageNodeSettings from '../../../../nodeBuilder/nodes/ImageNodeSetUp'
 import { NodeManager } from '../../../../nodeBuilder/NodeManager'
 import InferenceNodeSetUp from '../../../../nodeBuilder/nodes/InferenceNodeSetUp'
 import StepNavigation from './StepNavigation'
+import CameraProviderNodeSetUp from '../../../../nodeBuilder/nodes/CameraProviderNodeSetUp'
 
 type Props = {
   nodes: EditorNodeType[]
@@ -44,18 +45,24 @@ const EditorCanvasSidebar = ({ nodes }: Props) => {
     const data = selectedNodeOutputHandles[0]?.data ?? {}
     setOutputData(JSON.stringify(data, null, 2))
   }, [selectedNode])
-  
+
   const renderExternalConfig = (type: EditorNodeSpecificTypes) => {
     switch (type) {
-      case 'Camera':
+      case 'Camera Provider':
+        return <div>
+          <CameraProviderNodeSetUp
+            selectedNode={selectedNode}
+          />
+        </div>
+      case 'Image Device':
         return <>
-          <CameraNodeSettings
+          <ImageNodeSettings
             selectedNode={selectedNode}
           />
         </>
       case 'Model Provider':
         return <div>Model-specific settings go here...</div>
-      case 'Inference':
+      case 'Inference Device':
         return <>
           <InferenceNodeSetUp
             selectedNode={selectedNode}
@@ -74,7 +81,7 @@ const EditorCanvasSidebar = ({ nodes }: Props) => {
   }
 
   useEffect(() => {
-    console.log('selectedNode sidebar', state.editor.selectedNode.data.metadata)
+    console.log('selectedNode sidebar outputs', state.editor.selectedNode.data.metadata.outputHandles)
   }, [state.editor.selectedNode])
 
   return (
