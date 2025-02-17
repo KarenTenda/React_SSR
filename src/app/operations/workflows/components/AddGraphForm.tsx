@@ -136,7 +136,7 @@ const AddGraphForm = ({ title, subTitle }: Props) => {
                             )}
                         />
                         <Button
-                            className="mt-4"
+                            className="mt-4 bg-[#FA8072] text-white"
                             disabled={isLoading}
                             type="submit"
                         >

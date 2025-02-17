@@ -448,9 +448,10 @@ const AddTaskForm:React.FC<AddTaskFormProps> = ({cameraIds,regionIds}) => {
                         </>
                     )}
 
-                    <Button type="submit">Submit</Button>
+                    
                 </form>
             </Form>
+            <Button type="submit" className={`mt-4 bg-[#FA8072] text-white`}>Submit</Button>
         </div>
     )
 }

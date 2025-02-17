@@ -1,6 +1,7 @@
 import React from 'react'
 import TestGraphCard from '../graphCard/TestGraphCard'
-import { EditorGraphType } from '../../../types/EditorCanvasTypes'
+import { EditorGraphType } from '../editor/[editorId]/playground_ext';
+// import { EditorGraphType } from '../../../types/EditorCanvasTypes'
 
 const GraphGrid = () => {
     const [graphs, setGraphs] = React.useState<EditorGraphType[]>([]);

@@ -4,7 +4,7 @@ import React from 'react'
 // import GraphBuilderEditor from './_components/EditorCanvas'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"; // Import ShadCN Breadcrumb
 import { useSearchParams } from 'next/navigation'
-import GraphBuilderPlaygroundEditor, { PlaygroundEditorProvider } from './playground';
+// import GraphBuilderPlaygroundEditor, { PlaygroundEditorProvider } from './playground';
 import PlaygroundExtEditor, { PlaygroundExtEditorProvider } from './playground_ext';
 
 type Props = {}
@@ -33,6 +33,7 @@ function EditorPage(props: Props) {
 
         <p className="text-center text-lg max-w-3xl text-gray-700 dark:text-gray-300 mx-auto mt-2">
           {editorName ? `Edit ${editorName}` : 'Create a new workflow to get started'}
+          
         </p>
       </div>
       {/* <EditorProvider>
@@ -46,7 +47,7 @@ function EditorPage(props: Props) {
       <PlaygroundExtEditorProvider>
         <PlaygroundExtEditor />
       </PlaygroundExtEditorProvider>
-      
+
     </>
   )
 }

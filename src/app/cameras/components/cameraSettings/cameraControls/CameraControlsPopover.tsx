@@ -71,22 +71,27 @@ export function CameraControlsPopover({ camera, disabled = false }: CameraContro
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-2">
-            <div>
-                <CameraControlPanel 
-                cameraSettings={settings} 
-                setCameraSettings={setSettings}
-                />
-            </div>
-            <div className="flex flex-col items-center">
-                <img
-                    src={`${Urls.fetchPhantomCamera}/${camera.id}/stream`}
-                    loading="lazy"
-                    style={{ height: '200px', objectFit: 'cover' }}
-                />
-            </div>
-        </div>
+                    <div>
+                        <CameraControlPanel
+                            cameraSettings={settings}
+                            setCameraSettings={setSettings}
+                        />
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <img
+                            src={`${Urls.fetchPhantomCamera}/${camera.id}/stream`}
+                            loading="lazy"
+                            style={{ height: '200px', objectFit: 'cover' }}
+                        />
+                    </div>
+                </div>
                 <DialogFooter>
-                    <Button type="submit" onClick={handleSaveChanges}>Save changes</Button>
+                    <Button
+                        type="submit"
+                        className={`mt-4 bg-[#FA8072] text-white`}
+                        onClick={handleSaveChanges}
+                    >Submit
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

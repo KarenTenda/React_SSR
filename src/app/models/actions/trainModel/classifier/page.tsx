@@ -463,7 +463,7 @@ const initialNodes = [
       annotation_id: '1',
       annotation: {
         annotation_type: 'LABEL',
-        label: 'Ok',
+        label: 'Cat',
         images: [],
         camera_id: 'Camera1',
         region: {
@@ -498,7 +498,42 @@ const initialNodes = [
       annotation_id: '1',
       annotation: {
         annotation_type: 'LABEL',
-        label: 'Nok',
+        label: 'Dog',
+        images: [],
+        camera_id: 'Camera1',
+        region: {
+          id: uuidv4(),
+          type: 'imashape',
+          enabled: true,
+          reference_resolution: [1280, 720],
+          shape: {
+            shape: {
+              geometry_type: 3,
+              center: {
+                geometry_type: 8,
+                x: 640,
+                y: 360,
+              },
+              side: 100,
+            },
+          },
+        }
+      },
+      creator: 'karen',
+      creation_date: new Date().toISOString(),
+      modification_date: new Date().toISOString(),
+      status: { active: true },
+    }
+  },
+  {
+    id: 'classNode3',
+    type: 'classNode',
+    position: { x: 100, y: 500 },
+    data: {
+      annotation_id: '1',
+      annotation: {
+        annotation_type: 'LABEL',
+        label: 'Other',
         images: [],
         camera_id: 'Camera1',
         region: {
@@ -527,13 +562,13 @@ const initialNodes = [
   },
   {
     id: 'training',
-    position: { x: 400, y: 100 },
+    position: { x: 500, y: 300 },
     data: { label: 'Training' },
     type: 'trainingNode',
   },
   {
     id: 'preview',
-    position: { x: 650, y: 100 },
+    position: { x: 800, y: 300 },
     data: {
       label: 'Preview',
       isTrained: false,
@@ -544,13 +579,13 @@ const initialNodes = [
   {
     id: 'addClass',
     type: 'addClassNode',
-    position: { x: 100, y: 500 },
+    position: { x: 100, y: 700 },
     data: { onAddClass: () => { } },
   },
   {
     id: 'createDataset',
     type: 'createDatasetNode',
-    position: { x: 400, y: 500 },
+    position: { x: 500, y: 700 },
     data: { onCreateDataset: () => { } },
   },
 ];
@@ -558,6 +593,7 @@ const initialNodes = [
 const initialEdges = [
   { id: 'e1-training', source: 'classNode1', target: 'training' },
   { id: 'e2-training', source: 'classNode2', target: 'training' },
+  { id: 'e3-training', source: 'classNode3', target: 'training' },
   { id: 'e2-preview', source: 'training', target: 'preview' },
 ];
 

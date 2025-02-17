@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useReducer, ReactNode, useCallback, useEffect, use, useMemo, CSSProperties, useState } from "react";
+import React, { createContext, useContext, useReducer, ReactNode, useCallback, useEffect, useMemo, CSSProperties, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
     ReactFlow,
@@ -25,21 +25,34 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsTrigger, TabsContent, TabsList } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import useCameraService from "@/app/cameras/hooks/useCameraService";
-import { useToast } from "@/components/ui/use-toast";
-import { ToastAction } from "@/components/ui/toast";
-import { t } from "i18next";
-import { Separator } from "@/components/ui/separator";
-import { CameraStructure } from "@/app/cameras/structure/CameraStructure";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { toast, useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { t } from "i18next";
+import useCameraService from "@/app/cameras/hooks/useCameraService";
+import { CameraStructure } from "@/app/cameras/structure/CameraStructure";
 import Urls from "@/lib/Urls";
 import { RegionStructure } from "@/app/operations/regions/structures/RegionStructure";
 import useRegionService from "@/app/operations/regions/hooks/useRegions";
 import clsx from "clsx";
 import ClickableIconButton from "@/components/custom/buttons/ClickableIconButton";
-import { DeleteIcon } from "@/public/assets/Icons";
+import { DeleteIcon, SaveIcon } from "@/public/assets/Icons";
+import { usePathname } from "next/navigation";
+import { set } from "mongoose";
+
+export type EditorGraphType = {
+    graph_id: string
+    name: string
+    description: string
+    publish: boolean | null
+    nodes: EditorNode[]
+    edges: EditorEdge[]
+    subgraphs?: EditorGraphType[]
+}
 
 type EditorNodeCustomTypes =
     | 'Camera Provider'
@@ -105,7 +118,7 @@ const EditorNodeCustomHandleData = {
         inputHandles: [
             {
                 id: uuidv4(),
-                type: "source",
+                type: "target",
                 datatype: "string",
                 dataTypeColor: "string",
                 data: { cameraId: "" },
@@ -266,13 +279,13 @@ const EditorNodeCustomHandleData = {
     },
 }
 
-type datatype = 
-    |"string" 
-    | "number" 
-    | "boolean" 
-    | "ImageObject" 
-    | "InferenceResult" 
-    | "bytes" 
+type datatype =
+    | "string"
+    | "number"
+    | "boolean"
+    | "ImageObject"
+    | "InferenceResult"
+    | "bytes"
     | "RegionData"
     | "ModelData"
 
@@ -301,7 +314,7 @@ type EditorHandle = {
     };
 }
 
-type EditorNode = Node & {
+export type EditorNode = Node & {
     id: string;
     type: EditorNodeCustomTypes;
     position: XYPosition;
@@ -321,10 +334,14 @@ type EditorNode = Node & {
     };
 };
 
-type EditorEdge = {
+type EditorEdge = Edge & {
     id: string;
-    source: string;
-    target: string;
+    source: string; // sourceNode id
+    sourceHandle: string;
+    target: string; // targetNode id
+    targetHandle: string;
+    sourceHandleData: EditorHandle;
+    targetHandleData: EditorHandle;
 }
 
 type EditorState = {
@@ -339,13 +356,15 @@ const initialState: EditorState = {
     selectedNode: null,
 };
 
+// ------------------------------------Editor Reducer------------------------------------
+
 type EditorActions =
-    | { type: "LOAD_DATA", payload: { elements: EditorNode[], edges: EditorEdge[] } }
+    | { type: "LOAD_DATA", payload: { nodes: EditorNode[], edges: EditorEdge[] } }
     | { type: "ADD_NODE", payload: EditorNode }
     | { type: "UPDATE_NODE", payload: { nodeId: string, value: EditorNode } }
     | { type: "DELETE_NODE", payload: { id: string } }
     | { type: "SELECT_NODE", payload: EditorNode | null }
-    | { type: "ADD_EDGE", payload: { id: string, source: string, target: string, sourceHandle: string | null, targetHandle: string | null } }
+    | { type: "ADD_EDGE", payload: EditorEdge }
     | { type: "DELETE_EDGE", payload: { id: string } }
     | { type: "UPDATE_EDGES", payload: EdgeChange[] }
     | { type: "UPDATE_NODES", payload: NodeChange[] }
@@ -357,10 +376,7 @@ const editorReducer = (state: EditorState, action: EditorActions): EditorState =
         case "LOAD_DATA":
             return {
                 ...state,
-                nodes: action.payload.elements.map(node => ({
-                    ...node,
-                    type: node.type || "default",
-                })),
+                nodes: action.payload.nodes,
                 edges: action.payload.edges
             };
         case "ADD_NODE":
@@ -370,7 +386,7 @@ const editorReducer = (state: EditorState, action: EditorActions): EditorState =
                     ...state.nodes,
                     {
                         ...action.payload,
-                        type: action.payload.type || "default",
+                        type: action.payload.type,
                         data: {
                             ...action.payload.data,
                             metadata: {
@@ -413,11 +429,12 @@ const editorReducer = (state: EditorState, action: EditorActions): EditorState =
             return { ...state, selectedNode: action.payload };
         case "ADD_EDGE":
             const { id, ...restPayload } = action.payload;
-            return { ...state, edges: [...state.edges, { id: uuidv4(), ...restPayload }] };
+            return { ...state, edges: [...state.edges, action.payload] };
         case "DELETE_EDGE":
             return { ...state, edges: state.edges.filter(edge => edge.id !== action.payload.id) };
         case "UPDATE_EDGES":
-            return { ...state, edges: applyEdgeChanges(action.payload, state.edges) };
+            console.log("🔄 Updating edges:", action.payload);
+            return { ...state, edges: applyEdgeChanges(action.payload, state.edges) as EditorEdge[] };
         case "UPDATE_NODES":
             return { ...state, nodes: applyNodeChanges(action.payload, state.nodes) as EditorNode[] };
         case "PROPAGATE_DATA":
@@ -433,21 +450,21 @@ const editorReducer = (state: EditorState, action: EditorActions): EditorState =
                                     ...node.data.metadata,
                                     inputHandles: node.data.metadata.inputHandles.map(handle =>
                                         handle.id === action.payload.targetHandle.id
-                                            ? { ...handle, data: action.payload.sourceHandle.data }
+                                            ? { ...handle, data: action.payload.value }
                                             : handle
                                     ),
-                                }
-                            }
+                                },
+                            },
                         }
                         : node
                 ),
             };
 
+
         default:
             return state;
     }
 };
-
 interface EditorContextProps {
     state: EditorState;
     dispatch: React.Dispatch<EditorActions>;
@@ -480,6 +497,8 @@ export const usePlaygroundExtEditor = () => {
     return context
 
 }
+
+// ------------------------------------Node Components------------------------------------
 
 type CustomNodeHandleProps = HandleProps & {
     style?: CSSProperties;
@@ -580,11 +599,11 @@ const CustomNodeCard = ({ id, data }: { id: string; data: EditorNode['data'] }) 
                         {data.title}
                     </CardTitle>
                     <CardDescription>
-                        <p className="text-xs text-muted-foreground/50">
+                        <span className="text-xs text-muted-foreground/50">
                             <b className="text-muted-foreground/80">ID: </b>
                             {id}
-                        </p>
-                        <p>{data.description}</p>
+                        </span>
+                        <span>{data.description}</span>
                     </CardDescription>
                 </div>
             </CardHeader>
@@ -635,6 +654,8 @@ const CustomNodeCard = ({ id, data }: { id: string; data: EditorNode['data'] }) 
     );
 };
 
+// ------------------------------------Sidebar Components------------------------------------
+
 const CameraProviderNode = ({ id, data, cameras }: { id: string; data: EditorNode['data'], cameras: CameraStructure[] }) => {
     const { state, dispatch } = usePlaygroundExtEditor();
     const [selectedCamera, setSelectedCamera] = useState<CameraStructure | null>(null);
@@ -646,7 +667,7 @@ const CameraProviderNode = ({ id, data, cameras }: { id: string; data: EditorNod
         const cameraId = state.selectedNode.data.metadata.outputHandles[0]?.data.cameraId;
         const foundCamera = cameras.find((camera) => camera.id === cameraId) || null;
 
-        console.log("🔍 Found Camera:", foundCamera);
+        // console.log("🔍 Found Camera:", foundCamera);
         setSelectedCamera(foundCamera);
     }, [state.selectedNode, cameras]);
 
@@ -654,7 +675,7 @@ const CameraProviderNode = ({ id, data, cameras }: { id: string; data: EditorNod
         const camera = cameras.find((cam) => cam.id === cameraId);
         if (!camera) return;
 
-        console.log("📌 Selected Camera ID:", camera.id);
+        // console.log("📌 Selected Camera ID:", camera.id);
         setSelectedCamera(camera);
 
         const updatedNode = {
@@ -665,7 +686,7 @@ const CameraProviderNode = ({ id, data, cameras }: { id: string; data: EditorNod
                     ...state.selectedNode!.data.metadata,
                     outputHandles: state.selectedNode!.data.metadata.outputHandles.map(handle =>
                         handle.type === "source"
-                            ? { ...handle, data: { cameraId: camera.id } }
+                            ? { ...handle, data: { cameraId: camera.id } }  // ✅ Update Data, Keep ID
                             : handle
                     ),
                 },
@@ -676,20 +697,41 @@ const CameraProviderNode = ({ id, data, cameras }: { id: string; data: EditorNod
             type: "UPDATE_NODE",
             payload: { nodeId: state.selectedNode!.id, value: updatedNode },
         });
+
+        // ✅ Reapply edges to ensure they don't break
+        reapplyEdges(updatedNode);
     };
 
-    useEffect(() => {
-        const updatedNode = state.nodes.find(node => node.id === id);
-        if (updatedNode) {
-            console.log("✅ Camera Provider Updated Data:", JSON.stringify(updatedNode, null, 2));
-        }
-    }, [state.nodes]);
+    // ✅ Function to update edges when nodes change
+    const reapplyEdges = (updatedNode: EditorNode) => {
+        const updatedEdges = state.edges.map(edge => {
+            if (edge.source === updatedNode.id) {
+                const sourceHandle = updatedNode.data.metadata.outputHandles.find(handle => handle.id === edge.sourceHandle);
+                if (!sourceHandle) {
+                    console.warn(`⚠️ Source handle missing after update: ${edge.sourceHandle}`);
+                    return null;
+                }
+                return { ...edge, sourceHandle: sourceHandle.id };
+            }
+            return edge;
+        }).filter(Boolean);
 
-    useEffect(() => {
-        if (state.selectedNode) {
-            console.log("✅ Updated Selected Node:", JSON.stringify(state.selectedNode, null, 2));
-        }
-    }, [state.selectedNode]);
+        dispatch({ type: "UPDATE_EDGES", payload: updatedEdges as EdgeChange[] });
+    };
+
+
+    // useEffect(() => {
+    //     const updatedNode = state.nodes.find(node => node.id === id);
+    //     if (updatedNode) {
+    //         console.log("✅ Camera Provider Updated Data:", JSON.stringify(updatedNode, null, 2));
+    //     }
+    // }, [state.nodes]);
+
+    // useEffect(() => {
+    //     if (state.selectedNode) {
+    //         console.log("✅ Updated Selected Node:", JSON.stringify(state.selectedNode, null, 2));
+    //     }
+    // }, [state.selectedNode]);
 
 
     return (
@@ -764,9 +806,7 @@ const RegionProviderNode = ({ id, data, regions }: { id: string; data: EditorNod
     }, [state.nodes]);
 
     return (
-        <div className="p-4 bg-white shadow-md rounded">
-            <h3 className="font-bold">Region Provider</h3>
-
+        <>
             <Label>Select Region</Label>
             <Select value={selectedRegion?.id ?? ''} onValueChange={handleRegionSelection}>
                 <SelectTrigger className="w-[180px]">
@@ -783,17 +823,17 @@ const RegionProviderNode = ({ id, data, regions }: { id: string; data: EditorNod
 
             {/* ✅ Show Selected Region Data */}
             {selectedRegion && (
-                <div className="mt-4 p-2 bg-gray-100 rounded">
-                    <h4 className="font-bold">Region Data</h4>
+                <>
+                    <Label>Region Data</Label>
                     <Textarea
                         value={JSON.stringify(selectedRegion, null, 2)}
                         readOnly
                         rows={5}
                         className="w-full"
                     />
-                </div>
+                </>
             )}
-        </div>
+        </>
     );
 };
 
@@ -846,12 +886,10 @@ const ModelProviderNode = ({ id, data }: { id: string; data: EditorNode['data'] 
     }, [state.nodes, id]);
 
     return (
-        <div className="p-4 bg-white shadow-md rounded">
-            <h3 className="font-bold">Model Provider</h3>
-
+        <>
             <Label>Enter Model Id</Label>
             <Input value={selectedModel ?? ''} onChange={(e) => handleModelSelection(e.target.value)} />
-        </div>
+        </>
     );
 };
 
@@ -861,20 +899,32 @@ const ImageDeviceNode = ({ id, data, cameras }: {
     cameras: CameraStructure[];
 }) => {
     const { state, dispatch } = usePlaygroundExtEditor();
-
-    // ✅ Get the latest input from inputHandles
-    const inputValue = state.nodes.find(node => node.id === id)?.data.metadata.inputHandles[0]?.data.cameraId || "";
-
-    // ✅ Get Camera Object when inputValue updates
+    const [inputValue, setInputValue] = useState<string | null>(state.nodes.find(node => node.id === id)?.data.metadata.inputHandles[0]?.data.cameraId || "");
     const [cameraObject, setCameraObject] = useState<CameraStructure | null>(null);
+
+    const reapplyEdges = (updatedNode: EditorNode) => {
+        const updatedEdges = state.edges.map(edge => {
+            if (edge.source === updatedNode.id) {
+                const sourceHandle = updatedNode.data.metadata.outputHandles.find(handle => handle.id === edge.sourceHandle);
+                if (!sourceHandle) {
+                    console.warn(`⚠️ Source handle missing after update: ${edge.sourceHandle}`);
+                    return edge;
+                }
+                return { ...edge, sourceHandle: sourceHandle.id, sourceHandleData: sourceHandle };
+            }
+            return edge;
+        });
+
+        dispatch({ type: "UPDATE_EDGES", payload: updatedEdges as EdgeChange[] });
+    };
 
     useEffect(() => {
         if (!inputValue) return;
+
         const foundCamera = cameras.find(cam => cam.id === inputValue);
         console.log("📌 New Camera ID Received:", inputValue, "Found Camera:", foundCamera);
         setCameraObject(foundCamera || null);
 
-        // ✅ Update OutputHandles based on input
         const updatedOutputs = state.nodes.find(node => node.id === id)?.data.metadata.outputHandles?.map((handle) => {
             switch (handle.datatype) {
                 case 'string':
@@ -888,29 +938,48 @@ const ImageDeviceNode = ({ id, data, cameras }: {
             }
         });
 
+        const updatedNode = {
+            ...state.selectedNode!,
+            data: {
+                ...state.selectedNode!.data,
+                metadata: {
+                    ...state.selectedNode!.data.metadata,
+                    outputHandles: updatedOutputs || [],
+                },
+            },
+        };
+
         dispatch({
             type: "UPDATE_NODE",
             payload: {
                 nodeId: id,
-                value: {
-                    ...state.nodes.find(node => node.id === id),
-                    data: {
-                        ...state.nodes.find(node => node.id === id)?.data,
-                        metadata: {
-                            ...state.nodes.find(node => node.id === id)?.data.metadata,
-                            outputHandles: updatedOutputs || [],
-                        },
-                    },
-                } as EditorNode,
+                value: updatedNode
             },
         });
 
-    }, [inputValue]); // 🔥 Runs when input changes
+        reapplyEdges(updatedNode);
+
+    }, [inputValue]);
+
+    useEffect(() => {
+        const node = state.nodes.find(n => n.id === id);
+        if (!node) return;
+
+        const newInputValue = node.data.metadata.inputHandles[0]?.data.cameraId || "";
+        console.log("📌 New Input Value:", newInputValue);
+        if (newInputValue !== inputValue) {
+            setInputValue(newInputValue);
+            setCameraObject(cameras.find(cam => cam.id === newInputValue) || null);
+            console.log("📌 Updated Camera:", newInputValue);
+        }
+
+    }, [state.nodes]); // ✅ Now it runs whenever `state.nodes` updates
+
 
     return (
         <>
             <Label>Camera ID</Label>
-            <Input value={inputValue} readOnly />
+            <Input value={inputValue ?? ""} readOnly />
 
             <Label>Camera Object</Label>
             <Textarea
@@ -981,8 +1050,7 @@ const InferenceDeviceNode = ({ id, data, cameras }: { id: string; data: EditorNo
     };
 
     return (
-        <div className="p-4 bg-white shadow-md rounded">
-            <h3 className="font-bold">Inference Device</h3>
+        <>
 
             {/* ✅ Display Input Handles */}
             {inputHandles.map((handle, index) => (
@@ -1002,14 +1070,14 @@ const InferenceDeviceNode = ({ id, data, cameras }: { id: string; data: EditorNo
             ))}
 
             {/* ✅ Trigger Inference Processing */}
-            <Button onClick={handleInference} className="mt-4 w-full">
+            <Button onClick={handleInference} className="mt-4 w-full bg-[#FA8072] text-white">
                 Run Inference
             </Button>
 
             {/* ✅ Display Inference Result */}
             {nodeData?.data.metadata.outputHandles.some(handle => handle.datatype === "InferenceResult") && (
-                <div className="mt-4 p-2 bg-gray-100 rounded">
-                    <h4 className="font-bold">Inference Result</h4>
+                <>
+                    <Label>Inference Result</Label>
                     <Textarea
                         value={JSON.stringify(
                             nodeData.data.metadata.outputHandles.find(handle => handle.datatype === "InferenceResult")?.data?.inferenceResult || {},
@@ -1020,14 +1088,16 @@ const InferenceDeviceNode = ({ id, data, cameras }: { id: string; data: EditorNo
                         rows={5}
                         className="w-full"
                     />
-                </div>
+                </>
             )}
-        </div>
+        </>
     );
 };
 
 const EditorSidebar = () => {
     const { state, dispatch } = usePlaygroundExtEditor();
+    const pathname = usePathname()
+    const LOCAL_STORAGE_KEY = `graph_${pathname.split('/').pop()}`;
 
     const [cameras] = useCameraService();
     const [regions] = useRegionService();
@@ -1040,10 +1110,63 @@ const EditorSidebar = () => {
         event.dataTransfer.effectAllowed = 'move'
     }
 
+    const handleSaveGraph = async () => {
+        const graphData = {
+            nodes: state.nodes,
+            edges: state.edges,
+        };
+
+        try {
+            const id = pathname.split('/').pop(); // Extract graph ID from URL
+
+            console.log("📦 Saving Graph Data:", graphData);
+
+            const response = await fetch(`/api/graphs/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(graphData),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast({
+                    title: "Graph Saved",
+                    description: "Your graph has been successfully saved.",
+                    variant: "default",
+                });
+
+                // ✅ Update local storage after successful save
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(graphData));
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Failed to save the graph.",
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.error("❌ Error saving graph:", error);
+            toast({
+                title: "Error",
+                description: "An error occurred while saving.",
+                variant: "destructive",
+            });
+        }
+    };
+
+
     return (
         <>
-            <Tabs defaultValue="actions" className="w-96 pb-24">
+            <Tabs defaultValue="actions" className=" pb-24">
                 <TabsList className="bg-transparent sticky">
+                    <ClickableIconButton
+                        Icon={SaveIcon}
+                        onClick={handleSaveGraph}
+                        tooltipText="SaveGraph"
+                    />
                     <TabsTrigger value="actions">Virtual Devices</TabsTrigger>
                     <TabsTrigger value="settings">Device Settings</TabsTrigger>
                     <TabsTrigger value="Legend">Color Legend</TabsTrigger>
@@ -1069,7 +1192,7 @@ const EditorSidebar = () => {
 
                     <TabsContent value="settings" className="-mt-6">
                         {state.selectedNode ? (
-                            <div className="p-4 bg-white shadow-md rounded">
+                            <div className="h-full p-4 bg-white shadow-md rounded dark:bg-neutral-800">
                                 <h3 className="font-bold">{state.selectedNode.data.title} Settings</h3>
 
                                 {state.selectedNode.type === "Camera Provider" && (
@@ -1113,12 +1236,12 @@ const EditorSidebar = () => {
 
                             </div>
                         ) : (
-                            <p>Select a node to edit its settings.</p>
+                            <>Select a node to edit its settings.</>
                         )}
                     </TabsContent>
 
                     <TabsContent value="Legend" className="-mt-6">
-                        <div className="p-4 bg-white shadow-md rounded">
+                        <div className="p-4 bg-white shadow-md rounded dark:bg-neutral-800">
                             <h3 className="font-bold">Color Legend</h3>
                             <div className="flex flex-col gap-2">
                                 {Object.entries(DataTypesColors).map(([key, value]) => (
@@ -1127,7 +1250,7 @@ const EditorSidebar = () => {
                                             className="h-4 w-4 rounded-full"
                                             style={{ backgroundColor: value }}
                                         ></div>
-                                        <p>{key}</p>
+                                        <>{key}</>
                                     </div>
                                 ))}
                             </div>
@@ -1139,11 +1262,16 @@ const EditorSidebar = () => {
     );
 };
 
+// ------------------------------------Main Editor Component------------------------------------
 
 const PlaygroundExtEditor = () => {
     const { state, dispatch } = usePlaygroundExtEditor();
     const [nodes, setNodes, onNodesChange] = useNodesState(state.nodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(state.edges);
+    const pathname = usePathname()
+    const [isWorkFlowLoading, setIsWorkFlowLoading] = useState<boolean>(false)
+
+    const LOCAL_STORAGE_KEY = `graph_${pathname.split('/').pop()}`;
 
     const nodeTypes = useMemo(() => ({
         'Camera Provider': CustomNodeCard,
@@ -1155,21 +1283,18 @@ const PlaygroundExtEditor = () => {
         'Transform Device': CustomNodeCard,
     }), []);
 
-    const handleNodesChange = useCallback(
-        (changes: NodeChange[]) => {
-            setNodes((nds) => applyNodeChanges(changes, nds) as EditorNode[]);
-            dispatch({ type: "UPDATE_NODES", payload: changes });
-        },
-        [dispatch, setNodes]
-    );
+    const handleNodesChange = useCallback((changes: NodeChange[]) => {
+        const updatedNodes = applyNodeChanges(changes, state.nodes) as EditorNode[];
+        setNodes(updatedNodes);
+        dispatch({ type: "UPDATE_NODES", payload: changes });
+    }, [dispatch, setNodes, state.nodes]);
 
-    const handleEdgesChange = useCallback(
-        (changes: EdgeChange[]) => {
-            setEdges((eds) => applyEdgeChanges(changes, eds));
-            dispatch({ type: "UPDATE_EDGES", payload: changes });
-        },
-        [dispatch, setEdges]
-    );
+    const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
+        const updatedEdges = applyEdgeChanges(changes, state.edges);
+        console.log("🔄 Updated Edges in handleEdgesChange:", updatedEdges);
+        setEdges(updatedEdges as EditorEdge[]);
+        dispatch({ type: "UPDATE_EDGES", payload: changes });
+    }, [dispatch, setEdges, state.edges]);
 
     const handleEdgesDelete = useCallback(
         (edgesToDelete: Edge[]) => {
@@ -1183,74 +1308,78 @@ const PlaygroundExtEditor = () => {
     const onConnect = useCallback(
         (params: Connection) => {
             const { source, target, sourceHandle, targetHandle } = params;
+            console.log("🔗 Connection Params:", params);
 
-            const sourceNode = state.nodes.find(node => node.id === source);
-            const targetNode = state.nodes.find(node => node.id === target);
+            const sourceNode = state.nodes.find(node => node.id === params.source);
+            const targetNode = state.nodes.find(node => node.id === params.target);
 
             if (!sourceNode || !targetNode) {
-                console.error("❌ Missing source or target node:", { source, target });
+                console.error("❌ Missing source or target node:", { source: params.source, target: params.target });
                 return;
             }
 
-            // Retrieve the correct handles
-            const sourceHandleData = sourceNode.data.metadata.outputHandles.find(handle => handle.id === sourceHandle);
-            const targetHandleData = targetNode.data.metadata.inputHandles.find(handle => handle.id === targetHandle);
+            const sourceHandleData = sourceNode.data.metadata.outputHandles.find(handle => handle.id === params.sourceHandle);
+            const targetHandleData = targetNode.data.metadata.inputHandles.find(handle => handle.id === params.targetHandle);
 
             if (!sourceHandleData || !targetHandleData) {
-                console.error("❌ Missing handle:", { sourceHandle, targetHandle });
+                console.warn(`⚠️ Missing source or target handle.`, { sourceHandleData, targetHandleData });
                 return;
             }
 
-            console.log("✅ Source Handle Found:", sourceHandleData);
-            console.log("✅ Target Handle Found:", targetHandleData);
-
-            // Ensure compatible datatypes before connecting
-            if (sourceHandleData.datatype !== targetHandleData.datatype) {
-                console.error(`❌ Datatype mismatch: ${sourceHandleData.datatype} vs ${targetHandleData.datatype}`);
-                return;
+            if (sourceHandleData.type !== "source") {
+                console.error(`❌ Source handle is not 'source' type. Fixing:`, sourceHandleData);
+                sourceHandleData.type = "source"; // 🔥 Fix incorrect handle type
             }
 
-            console.log("✅ Data types match. Transferring data...");
+            if (targetHandleData.type !== "target") {
+                console.error(`❌ Target handle is not 'target' type. Fixing:`, targetHandleData);
+                targetHandleData.type = "target"; // 🔥 Fix incorrect handle type
+            }
 
-            // Dispatch PROPAGATE_DATA to update the target node
+            // ✅ Update target node to reflect input changes
+            const updatedTargetNode = {
+                ...targetNode,
+                data: {
+                    ...targetNode.data,
+                    metadata: {
+                        ...targetNode.data.metadata,
+                        inputHandles: targetNode.data.metadata.inputHandles.map(handle =>
+                            handle.id === targetHandleData.id
+                                ? { ...handle, data: sourceHandleData.data }
+                                : handle
+                        ),
+                    },
+                },
+            };
+
             dispatch({
                 type: "PROPAGATE_DATA",
                 payload: {
-                    targetNode,
+                    targetNode: targetNode,
                     targetHandle: targetHandleData,
                     sourceHandle: sourceHandleData,
-                    value: sourceHandleData.data, // Transfer the data
-                },
-            });
+                    value: sourceHandleData.data
+                }
+            })
 
-            // Update the target node with new input data
+            dispatch({ type: "UPDATE_NODE", payload: { nodeId: updatedTargetNode.id, value: updatedTargetNode } });
+
+            // ✅ Add new edge with separate `sourceHandleData` and `targetHandleData`
             dispatch({
-                type: "UPDATE_NODE",
+                type: "ADD_EDGE",
                 payload: {
-                    nodeId: targetNode.id,
-                    value: {
-                        ...targetNode,
-                        data: {
-                            ...targetNode.data,
-                            metadata: {
-                                ...targetNode.data.metadata,
-                                inputHandles: targetNode.data.metadata.inputHandles.map(handle =>
-                                    handle.id === targetHandleData.id
-                                        ? { ...handle, data: sourceHandleData.data }
-                                        : handle
-                                ),
-                            },
-                        },
-                    } as EditorNode,
+                    id: uuidv4(),
+                    source,
+                    target,
+                    sourceHandle: sourceHandleData.id,
+                    targetHandle: targetHandleData.id,
+                    sourceHandleData,
+                    targetHandleData,
                 },
             });
-
-            // Add edge to state
-            dispatch({ type: "ADD_EDGE", payload: { id: uuidv4(), ...params } });
         },
         [dispatch, state.nodes]
     );
-
 
     const onDrop = useCallback(
         (event: React.DragEvent) => {
@@ -1278,12 +1407,13 @@ const PlaygroundExtEditor = () => {
                     metadata: {
                         inputs: nodeHandleData.inputs || 0,
                         outputs: nodeHandleData.outputs || 0,
-                        inputHandles: nodeHandleData.inputHandles || [],
-                        outputHandles: nodeHandleData.outputHandles || [],
+                        inputHandles: nodeHandleData.inputHandles || [], // ✅ Ensure handles exist
+                        outputHandles: nodeHandleData.outputHandles || [], // ✅ Ensure handles exist
                     },
                     specificType: type,
                 },
             };
+
 
             console.log("New Node Created:", newNode);
 
@@ -1298,8 +1428,148 @@ const PlaygroundExtEditor = () => {
     }, []);
 
     const onNodeClick = useCallback((event: any, node: EditorNode) => {
+        // console.log("📌 Selected Node:", node);
+        // console.log("📌 Current Edges:", state.edges); 
+
         dispatch({ type: "SELECT_NODE", payload: node });
-    }, [dispatch]);
+    }, [dispatch, state.edges]);
+
+    const validateEdges = (nodes: EditorNode[], edges: EditorEdge[]) => {
+        return edges.filter(edge => {
+            const sourceNode = nodes.find(node => node.id === edge.source);
+            const targetNode = nodes.find(node => node.id === edge.target);
+
+            if (!sourceNode || !targetNode) {
+                console.warn(`⚠️ Skipping invalid edge: Missing source/target node`, edge);
+                return false;
+            }
+
+            // Ensure that the handle exists in the current nodes
+            const sourceHandleExists = sourceNode.data.metadata.outputHandles.some(handle => handle.id === edge.sourceHandle);
+            const targetHandleExists = targetNode.data.metadata.inputHandles.some(handle => handle.id === edge.targetHandle);
+
+            if (!sourceHandleExists || !targetHandleExists) {
+                console.warn(`⚠️ Skipping invalid edge: Source/Target handle missing`, edge);
+                return false;
+            }
+
+            return true;
+        });
+    };
+
+    useEffect(() => {
+        const loadGraph = async () => {
+            setIsWorkFlowLoading(true);
+            const id = pathname.split('/').pop();
+
+            if (!id) {
+                console.error("❌ Invalid Graph ID in URL");
+                setIsWorkFlowLoading(false);
+                return;
+            }
+
+            let dbNodes: EditorNode[] = [];
+            let dbEdges: EditorEdge[] = [];
+            let localNodes: EditorNode[] = [];
+            let localEdges: EditorEdge[] = [];
+
+            try {
+                // 🔹 Step 1: Fetch from database
+                const response = await fetch(`/api/graphs/${id}`);
+                const data = await response.json();
+
+                if (data.success && data.graph) {
+                    dbNodes = data.graph.nodes;
+                    dbEdges = data.graph.edges;
+                } else {
+                    console.warn("⚠️ No data found in DB.");
+                }
+            } catch (error) {
+                console.error("❌ Error fetching graph data from DB:", error);
+            }
+
+            // 🔹 Step 2: Load from local storage if DB is empty
+            const savedGraph = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (savedGraph) {
+                const parsedGraph = JSON.parse(savedGraph);
+                localNodes = parsedGraph.nodes || [];
+                localEdges = parsedGraph.edges || [];
+                console.log("📌 Loaded from local storage:", { localNodes, localEdges });
+            }
+
+            // 🔹 Step 3: Compare and update
+            if (dbNodes.length > 0 && dbEdges.length > 0) {
+                // ✅ Database has data → Compare with local storage
+                const isDifferent = JSON.stringify(dbNodes) !== JSON.stringify(localNodes) ||
+                    JSON.stringify(dbEdges) !== JSON.stringify(localEdges);
+
+                if (isDifferent) {
+                    console.log("🔄 Updating local storage with DB data");
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ nodes: dbNodes, edges: dbEdges }));
+                }
+
+                // Set state with DB data
+                // const validEdges = validateEdges(dbNodes, dbEdges);
+                setNodes(dbNodes);
+                setEdges(dbEdges);
+                dispatch({ type: "LOAD_DATA", payload: { nodes: dbNodes, edges: dbEdges } });
+
+            } else if (localNodes.length > 0 && localEdges.length > 0) {
+                // ✅ Fallback: Use local storage
+                console.log("📌 Using local storage data");
+                // const validEdges = validateEdges(localNodes, localEdges);
+                setNodes(localNodes);
+                setEdges(localEdges);
+                dispatch({ type: "LOAD_DATA", payload: { nodes: localNodes, edges: localEdges } });
+
+            } else {
+                console.warn("⚠️ No nodes or edges found. Initializing empty state.");
+                setNodes([]);
+                setEdges([]);
+            }
+
+            setIsWorkFlowLoading(false);
+        };
+
+        loadGraph();
+    }, [pathname]);
+
+    useEffect(() => {
+        // if (state.nodes.length === 0 && state.edges.length === 0) {
+        //     console.log("🗑️ No nodes and edges left. Clearing local storage.");
+        //     localStorage.removeItem(LOCAL_STORAGE_KEY);
+        // } 
+        if (!state.nodes.length && !state.edges.length) {
+            const savedGraph = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (savedGraph) {
+                console.log("📌 Local storage exists, skipping removal.");
+                return; // ✅ Prevent clearing local storage if data exists
+            }
+
+            console.log("🗑️ No nodes and edges left. Clearing local storage.");
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+        } else {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
+                nodes: state.nodes,
+                edges: state.edges
+            }));
+        }
+    }, [state.nodes, state.edges]);
+
+    useEffect(() => {
+        if (state.nodes.length > 0 && state.edges.length > 0) {
+            console.log("📌 Updating Nodes in ReactFlow:", state.nodes);
+            console.log("📌 Updating Edges in ReactFlow:", state.edges);
+            const validEdges = validateEdges(state.nodes, state.edges);
+
+            console.log("✅ Valid Edges after filtering:", validEdges);
+
+            setNodes(state.nodes);
+            setEdges(validEdges);
+
+            // console.log("✅ Updated Nodes & Edges:", state.nodes, validEdges);
+        }
+    }, [state.nodes, state.edges]);
 
     useEffect(() => {
         setNodes(state.nodes);
@@ -1310,26 +1580,102 @@ const PlaygroundExtEditor = () => {
     }, [state.edges, setEdges]);
 
     return (
-        <div className="flex h-screen">
+        // <div className="flex h-screen">
 
-            <div className="w-full h-full" onDrop={onDrop} onDragOver={onDragOver}>
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    nodeTypes={nodeTypes}
-                    onNodesChange={handleNodesChange}
-                    onEdgesChange={handleEdgesChange}
-                    onEdgesDelete={handleEdgesDelete}
-                    onConnect={onConnect}
-                    onNodeClick={onNodeClick}
-                    fitView
-                >
-                    <Background />
-                    <MiniMap />
-                    <Controls />
-                </ReactFlow>
-            </div>
-            <EditorSidebar />
+        //     <div className="w-full h-full" onDrop={onDrop} onDragOver={onDragOver}>
+        //         <ReactFlow
+        //             nodes={nodes}
+        //             edges={edges}
+        //             nodeTypes={nodeTypes}
+        //             onNodesChange={handleNodesChange}
+        //             onEdgesChange={handleEdgesChange}
+        //             onEdgesDelete={handleEdgesDelete}
+        //             onConnect={onConnect}
+        //             onNodeClick={onNodeClick}
+        //             fitView
+        //         >
+        //             <Background />
+        //             <MiniMap />
+        //             <Controls />
+        //         </ReactFlow>
+        //     </div>
+        //     <EditorSidebar />
+        // </div>
+        <div>
+            <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel defaultSize={70}>
+                    <div className="flex h-full items-center justify-center">
+                        <div
+                            style={{ width: '100%', height: '100%', paddingBottom: '70px' }}
+                            className="relative"
+                        >
+                            {isWorkFlowLoading ? (
+                                <div className="absolute flex h-full w-full items-center justify-center">
+                                    <svg
+                                        aria-hidden="true"
+                                        className="inline h-8 w-8 animate-spin fill-blue-600 text-gray-200 dark:text-gray-600"
+                                        viewBox="0 0 100 101"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                                            fill="currentColor"
+                                        />
+                                        <path
+                                            d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                                            fill="currentFill"
+                                        />
+                                    </svg>
+                                </div>
+                            ) : (
+                                <div onDrop={onDrop} onDragOver={onDragOver} style={{ width: '100%', height: '850px' }}>
+                                    <ReactFlow
+                                        nodes={nodes}
+                                        edges={edges}
+                                        nodeTypes={nodeTypes}
+                                        onNodesChange={handleNodesChange}
+                                        onEdgesChange={handleEdgesChange}
+                                        onEdgesDelete={handleEdgesDelete}
+                                        onConnect={onConnect}
+                                        onNodeClick={onNodeClick}
+                                        fitView
+                                    >
+                                        <Background />
+                                        <MiniMap />
+                                        <Controls />
+                                    </ReactFlow>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </ResizablePanel>
+                <ResizableHandle />
+                <ResizablePanel defaultSize={30}>
+                    {isWorkFlowLoading ? (
+                        <div className="absolute flex h-full w-full items-center justify-center">
+                            <svg
+                                aria-hidden="true"
+                                className="inline h-8 w-8 animate-spin fill-blue-600 text-gray-200 dark:text-gray-600"
+                                viewBox="0 0 100 101"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                                    fill="currentColor"
+                                />
+                                <path
+                                    d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                                    fill="currentFill"
+                                />
+                            </svg>
+                        </div>
+                    ) : (
+                        <EditorSidebar />
+                    )}
+                </ResizablePanel>
+            </ResizablePanelGroup>
         </div>
     );
 };

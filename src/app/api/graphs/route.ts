@@ -41,3 +41,22 @@ export async function GET(request: Request) {
         return NextResponse.json({ success: false, message: 'Error fetching graphs' }, { status: 500 });
     }
 }
+
+export async function DELETE(request: Request) {
+    const data = await request.json();
+
+    try {
+        await dbConnect();  // Ensure the MongoDB connection
+
+        const graph = await Graph.findOneAndDelete({ graph_id: data.graph_id });  // Find and delete the graph
+
+        if (!graph) {
+            return NextResponse.json({ success: false, message: 'Graph not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, message: 'Graph deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting graph:', error);
+        return NextResponse.json({ success: false, message: 'Error deleting graph' }, { status: 500 });
+    }
+}

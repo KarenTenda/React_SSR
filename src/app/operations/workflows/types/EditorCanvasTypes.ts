@@ -1,5 +1,7 @@
 import { CameraStructure } from "@/app/cameras/structure/CameraStructure";
 import { HandleInfo, NodeMetadata } from "./PinMetadataTypes";
+// remember to remove this if testing the old code
+// import { EditorNode } from "../components/graphBuilder/editor/[editorId]/playground_ext";
 
 export type EditorNodeSpecificTypes =
     | 'Camera Provider'

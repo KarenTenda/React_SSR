@@ -1,7 +1,7 @@
 
 "use client";
 import AddGraphForm from './AddGraphForm';
-import CustomModal from '@/components/custom/modals/CustomModal';
+import CustomDrawer from '@/components/custom/modals/CustomDrawer';
 import { Button } from '@/components/ui/button'
 import { useModal } from '@/providers/modal-provider';
 import { Plus } from 'lucide-react'
@@ -14,16 +14,16 @@ const AddGraphButton = (props: Props) => {
 
   const handleClick = () => {
     setOpen(
-      <CustomModal
+      <CustomDrawer
         title="Create a Workflow Automation"
         subheading="Workflows are a powerfull that help you automate tasks."
       >
         <AddGraphForm />
-      </CustomModal>
+      </CustomDrawer>
     )
   }
   return (
-    <Button size={'icon'} onClick={handleClick} disabled>
+    <Button size={'icon'} onClick={handleClick}>
       <Plus />
     </Button>
   )
