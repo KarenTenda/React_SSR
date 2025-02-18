@@ -45,7 +45,8 @@ const GraphGrid = () => {
                         <h2 className="text-lg">No workflows found</h2>
                         <p className="text-sm text-gray-500">Create a new workflow to get started</p>
                     </div>
-                )}
+                )
+            }
         </>
     )
 }

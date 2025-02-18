@@ -18,7 +18,13 @@ import {
     Handle,
     useNodesState,
     useEdgesState,
-    HandleProps
+    HandleProps,
+    useReactFlow,
+    getBezierEdgeCenter,
+    getBezierPath,
+    EdgeProps,
+    BaseEdge,
+    EdgeLabelRenderer
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button } from "@/components/ui/button";
@@ -42,7 +48,6 @@ import clsx from "clsx";
 import ClickableIconButton from "@/components/custom/buttons/ClickableIconButton";
 import { DeleteIcon, SaveIcon } from "@/public/assets/Icons";
 import { usePathname } from "next/navigation";
-import { set } from "mongoose";
 
 export type EditorGraphType = {
     graph_id: string
@@ -314,6 +319,19 @@ type EditorHandle = {
     };
 }
 
+type EditorEdge = Edge & {
+    id: string;
+    type: string;
+    source: string;
+    target: string;
+    sourceHandleId: string;
+    targetHandleId: string;
+    data: {
+        sourceHandleData: EditorHandle;
+        targetHandleData: EditorHandle;
+    }
+}
+
 export type EditorNode = Node & {
     id: string;
     type: EditorNodeCustomTypes;
@@ -333,16 +351,6 @@ export type EditorNode = Node & {
         specificType: string;
     };
 };
-
-type EditorEdge = Edge & {
-    id: string;
-    source: string; // sourceNode id
-    sourceHandle: string;
-    target: string; // targetNode id
-    targetHandle: string;
-    sourceHandleData: EditorHandle;
-    targetHandleData: EditorHandle;
-}
 
 type EditorState = {
     nodes: EditorNode[];
@@ -428,10 +436,20 @@ const editorReducer = (state: EditorState, action: EditorActions): EditorState =
         case "SELECT_NODE":
             return { ...state, selectedNode: action.payload };
         case "ADD_EDGE":
-            const { id, ...restPayload } = action.payload;
+            // const { id, ...restPayload } = action.payload;
             return { ...state, edges: [...state.edges, action.payload] };
         case "DELETE_EDGE":
-            return { ...state, edges: state.edges.filter(edge => edge.id !== action.payload.id) };
+            console.log("🗑️ Deleting Edge:", action.payload.id);
+            console.log("Before:", state.edges);
+
+            const updatedEdges = state.edges.filter(edge => edge.id !== action.payload.id);
+
+            console.log("After:", updatedEdges);
+            return {
+                ...state,
+                edges: updatedEdges
+            };
+
         case "UPDATE_EDGES":
             console.log("🔄 Updating edges:", action.payload);
             return { ...state, edges: applyEdgeChanges(action.payload, state.edges) as EditorEdge[] };
@@ -526,6 +544,7 @@ const CustomNodeHandle = ({ handleData, ...props }: CustomNodeHandleProps) => {
                 // Find the source and target nodes
                 const sourceNode = state.nodes.find(node => node.id === connection.source);
                 const targetNode = state.nodes.find(node => node.id === connection.target);
+                // console.log('State Nodes:', JSON.stringify(state.nodes, null, 2));
                 // console.log('Source Node:', JSON.stringify(sourceNode, null, 2));
                 // console.log('Target Node:', JSON.stringify(targetNode, null, 2));
 
@@ -543,8 +562,22 @@ const CustomNodeHandle = ({ handleData, ...props }: CustomNodeHandleProps) => {
                 }
 
                 // Find the correct handles
-                const sourceHandle = sourceNode.data.metadata.outputHandles.find(handle => handle.id === connection.sourceHandle);
-                const targetHandle = targetNode.data.metadata.inputHandles.find(handle => handle.id === connection.targetHandle);
+                const sourceHandle = sourceNode.data.metadata.outputHandles.find(
+                    handle => handle.id === connection.sourceHandle
+                );
+                const targetHandle = targetNode.data.metadata.inputHandles.find(
+                    handle => handle.id === connection.targetHandle
+                );
+
+                // console.log("🎯 Checking handles...");
+                // console.log("handleData", handleData)
+                // console.log("🔗 Connection Source Handle ID:", connection.sourceHandle);
+                // console.log("✅ Found Source Handle:", sourceHandle);
+                // console.log("🔗 Connection Target Handle ID:", connection.targetHandle);
+                // console.log("✅ Found Target Handle:", targetHandle);
+
+                // const sourceHandle = sourceNode.data.metadata.outputHandles.find(handle => handle.id === connection.sourceHandle);
+                // const targetHandle = targetNode.data.metadata.inputHandles.find(handle => handle.id === connection.targetHandle);
 
                 if (!sourceHandle || !targetHandle) {
                     console.error('Missing source or target handle:', { sourceHandle, targetHandle });
@@ -577,19 +610,133 @@ const CustomNodeHandle = ({ handleData, ...props }: CustomNodeHandleProps) => {
 
                 return true; // Allow connection
             }}
+            // isValidConnection={(connection) => {
+            //     console.log('🎯 Checking handles...');
+
+            //     // ✅ Print latest state before checking
+            //     console.log("🔎 Current State Nodes:", JSON.stringify(state.nodes, null, 2));
+
+            //     const sourceNode = state.nodes.find(node => node.id === connection.source);
+            //     const targetNode = state.nodes.find(node => node.id === connection.target);
+
+            //     if (!sourceNode || !targetNode) {
+            //         console.error('❌ Missing source or target node');
+            //         return false;
+            //     }
+
+            //     // ✅ Delay checking until nodes are updated
+            //     setTimeout(() => {
+            //         const updatedSourceNode = state.nodes.find(node => node.id === connection.source);
+            //         const updatedTargetNode = state.nodes.find(node => node.id === connection.target);
+
+            //         if (!updatedSourceNode || !updatedTargetNode) return false;
+
+            //         const sourceHandle = updatedSourceNode.data.metadata.outputHandles.find(
+            //             handle => handle.id === connection.sourceHandle
+            //         );
+            //         const targetHandle = updatedTargetNode.data.metadata.inputHandles.find(
+            //             handle => handle.id === connection.targetHandle
+            //         );
+
+            //         console.log('🔗 Connection Source Handle ID:', connection.sourceHandle);
+            //         console.log('✅ Found Source Handle:', sourceHandle);
+            //         console.log('🔗 Connection Target Handle ID:', connection.targetHandle);
+            //         console.log('✅ Found Target Handle:', targetHandle);
+
+            //         if (!sourceHandle || !targetHandle) {
+            //             console.warn("⚠️ Handles not found after delay.");
+            //             return false;
+            //         }
+
+            //         return sourceHandle.datatype === targetHandle.datatype;
+            //     }, 100);
+
+            //     return false; // Default to false until state updates
+            // }}
             className="!-bottom-2 !h-4 !w-4 dark:bg-neutral-800"
         />
     );
 };
 
+const CustomEdge = ({
+    id,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    style = {},
+    markerEnd,
+}: EdgeProps) => {
+    // const { setEdges } = useReactFlow();
+    const { state, dispatch } = usePlaygroundExtEditor();
+    const { toast } = useToast();
+    const [edgePath, labelX, labelY] = getBezierPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+    });
+
+    const onEdgeClick = () => {
+        // setEdges((edges) => edges.filter((edge) => edge.id !== id));
+        dispatch({ type: "DELETE_EDGE", payload: { id } });
+        toast({
+            title: 'Edge Deleted',
+            variant: 'default',
+            description: `🗑️ Edge ${id} deleted successfully!`
+        });
+    };
+
+    return (
+        <>
+            {/* Render the base edge */}
+            <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+
+            {/* Delete button inside EdgeLabelRenderer */}
+            <EdgeLabelRenderer>
+                <div
+                    className="absolute pointer-events-auto transform-origin-center nodrag nopan"
+                    style={{
+                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                    }}
+                >
+                    <button
+                        className="w-[30px] h-[30px] border-[5px] border-[#f7f9fb] text-[var(--xy-edge-label-color-default)] bg-[#f3f3f4] cursor-pointer rounded-full text-[12px] pt-0 hover:bg-[var(--xy-theme-hover)] hover:text-white dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-600"
+                        onClick={onEdgeClick}
+                    >
+                        X
+                    </button>
+                </div>
+            </EdgeLabelRenderer>
+        </>
+    );
+}
+
 const CustomNodeCard = ({ id, data }: { id: string; data: EditorNode['data'] }) => {
     const { state, dispatch } = usePlaygroundExtEditor();
+    const pathname = usePathname()
+    const LOCAL_STORAGE_KEY = `graph_${pathname.split('/').pop()}`;
 
     const handleDelete = () => {
         dispatch({ type: "DELETE_NODE", payload: { id } });
+        // remove from local storage
+        const savedGraph = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedGraph) {
+            const parsedGraph = JSON.parse(savedGraph);
+            const updatedNodes = parsedGraph.nodes.filter((node: EditorNode) => node.id !== id);
+            const updatedEdges = parsedGraph.edges.filter((edge: EditorEdge) => edge.source !== id && edge.target !== id);
+
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ nodes: updatedNodes, edges: updatedEdges }));
+        }
     };
 
-    const nodeTypeData = EditorNodeCustomHandleData[data.specificType as EditorNodeCustomTypes];
+    const nodedefaultData = EditorNodeCustomHandleData[data.specificType as EditorNodeCustomTypes];
+    const nodeHandleData = data.metadata || nodedefaultData;
+    // console.log("🔍 Node Type Data:", JSON.stringify(nodeHandleData, null, 2));
 
     return (
         <Card className="relative max-w-[400px] dark:border-muted-foreground/70">
@@ -603,7 +750,7 @@ const CustomNodeCard = ({ id, data }: { id: string; data: EditorNode['data'] }) 
                             <b className="text-muted-foreground/80">ID: </b>
                             {id}
                         </span>
-                        <span>{data.description}</span>
+                        {/* <span>{data.description}</span> */}
                     </CardDescription>
                 </div>
             </CardHeader>
@@ -615,7 +762,7 @@ const CustomNodeCard = ({ id, data }: { id: string; data: EditorNode['data'] }) 
                 })}
             ></div>
 
-            {nodeTypeData.inputHandles.map((handle, index) => (
+            {nodeHandleData.inputHandles.map((handle, index) => (
                 <CustomNodeHandle
                     key={(handle as EditorHandle).id}
                     handleData={handle as EditorHandle}
@@ -628,7 +775,7 @@ const CustomNodeCard = ({ id, data }: { id: string; data: EditorNode['data'] }) 
                 />
             ))}
 
-            {nodeTypeData.outputHandles.map((handle, index) => (
+            {nodeHandleData.outputHandles.map((handle, index) => (
                 <CustomNodeHandle
                     key={(handle as EditorHandle).id}
                     handleData={handle as EditorHandle}
@@ -988,6 +1135,7 @@ const ImageDeviceNode = ({ id, data, cameras }: {
                 rows={10}
             />
 
+            <Label>Camera Image</Label>
             <img src={`${Urls.fetchPhantomCamera}/${inputValue}/image`} alt="Camera Image" />
         </>
     );
@@ -1283,6 +1431,10 @@ const PlaygroundExtEditor = () => {
         'Transform Device': CustomNodeCard,
     }), []);
 
+    const edgeTypes = useMemo(() => ({
+        'deletable': CustomEdge,
+    }), []);
+
     const handleNodesChange = useCallback((changes: NodeChange[]) => {
         const updatedNodes = applyNodeChanges(changes, state.nodes) as EditorNode[];
         setNodes(updatedNodes);
@@ -1291,13 +1443,28 @@ const PlaygroundExtEditor = () => {
 
     const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
         const updatedEdges = applyEdgeChanges(changes, state.edges);
-        console.log("🔄 Updated Edges in handleEdgesChange:", updatedEdges);
+        // console.log("🔄 Updated Edges in handleEdgesChange:", updatedEdges);
         setEdges(updatedEdges as EditorEdge[]);
         dispatch({ type: "UPDATE_EDGES", payload: changes });
     }, [dispatch, setEdges, state.edges]);
 
     const handleEdgesDelete = useCallback(
         (edgesToDelete: Edge[]) => {
+            console.log("🗑️ Deleting edges from local storage:", edgesToDelete.map(e => e.id));
+
+            const savedGraph = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (savedGraph) {
+                const parsedGraph = JSON.parse(savedGraph);
+                const updatedEdges = parsedGraph.edges.filter((edge: EditorEdge) =>
+                    !edgesToDelete.some(e => e.id === edge.id)
+                );
+
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
+                    nodes: parsedGraph.nodes,
+                    edges: updatedEdges
+                }));
+            }
+
             edgesToDelete.forEach(edge => {
                 dispatch({ type: "DELETE_EDGE", payload: { id: edge.id } });
             });
@@ -1320,6 +1487,9 @@ const PlaygroundExtEditor = () => {
 
             const sourceHandleData = sourceNode.data.metadata.outputHandles.find(handle => handle.id === params.sourceHandle);
             const targetHandleData = targetNode.data.metadata.inputHandles.find(handle => handle.id === params.targetHandle);
+
+            console.log("🔗 Source Handle Data:", JSON.stringify(sourceHandleData, null, 2));
+            console.log("🔗 Target Handle Data:", JSON.stringify(targetHandleData, null, 2));
 
             if (!sourceHandleData || !targetHandleData) {
                 console.warn(`⚠️ Missing source or target handle.`, { sourceHandleData, targetHandleData });
@@ -1364,18 +1534,24 @@ const PlaygroundExtEditor = () => {
 
             dispatch({ type: "UPDATE_NODE", payload: { nodeId: updatedTargetNode.id, value: updatedTargetNode } });
 
-            // ✅ Add new edge with separate `sourceHandleData` and `targetHandleData`
-            dispatch({
-                type: "ADD_EDGE",
-                payload: {
-                    id: uuidv4(),
-                    source,
-                    target,
-                    sourceHandle: sourceHandleData.id,
-                    targetHandle: targetHandleData.id,
+            const new_edge = {
+                id: uuidv4(),
+                type: 'deletable',
+                source: sourceNode.id,
+                target: targetNode.id,
+                sourceHandleId: sourceHandleData.id,
+                targetHandleId: targetHandleData.id,
+                data: {
                     sourceHandleData,
                     targetHandleData,
-                },
+                }
+            };
+
+            console.log("🔗 New Edge created:", JSON.stringify(new_edge, null, 2));
+
+            dispatch({
+                type: "ADD_EDGE",
+                payload: new_edge,
             });
         },
         [dispatch, state.nodes]
@@ -1392,7 +1568,6 @@ const PlaygroundExtEditor = () => {
                 y: event.clientY - reactFlowBounds.top,
             };
 
-            // Get the correct metadata for the node type
             const nodeHandleData = EditorNodeCustomHandleData[type as EditorNodeCustomTypes];
 
             const newNode: EditorNode = {
@@ -1407,15 +1582,15 @@ const PlaygroundExtEditor = () => {
                     metadata: {
                         inputs: nodeHandleData.inputs || 0,
                         outputs: nodeHandleData.outputs || 0,
-                        inputHandles: nodeHandleData.inputHandles || [], // ✅ Ensure handles exist
-                        outputHandles: nodeHandleData.outputHandles || [], // ✅ Ensure handles exist
+                        inputHandles: nodeHandleData.inputHandles as EditorHandle[] || [],
+                        outputHandles: nodeHandleData.outputHandles as EditorHandle[] || [],
                     },
                     specificType: type,
                 },
             };
 
 
-            console.log("New Node Created:", newNode);
+            console.log("📌 New Node created:", JSON.stringify(newNode, null, 2));
 
             dispatch({ type: "ADD_NODE", payload: newNode });
         },
@@ -1428,11 +1603,11 @@ const PlaygroundExtEditor = () => {
     }, []);
 
     const onNodeClick = useCallback((event: any, node: EditorNode) => {
-        // console.log("📌 Selected Node:", node);
-        // console.log("📌 Current Edges:", state.edges); 
+        console.log("📌 Selected Node:", node);
+        console.log("📌 Current Edges:", state.edges);
 
         dispatch({ type: "SELECT_NODE", payload: node });
-    }, [dispatch, state.edges]);
+    }, [dispatch]);
 
     const validateEdges = (nodes: EditorNode[], edges: EditorEdge[]) => {
         return edges.filter(edge => {
@@ -1498,8 +1673,7 @@ const PlaygroundExtEditor = () => {
             }
 
             // 🔹 Step 3: Compare and update
-            if (dbNodes.length > 0 && dbEdges.length > 0) {
-                // ✅ Database has data → Compare with local storage
+            if (dbNodes.length > 0 || dbEdges.length > 0) {
                 const isDifferent = JSON.stringify(dbNodes) !== JSON.stringify(localNodes) ||
                     JSON.stringify(dbEdges) !== JSON.stringify(localEdges);
 
@@ -1508,18 +1682,19 @@ const PlaygroundExtEditor = () => {
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ nodes: dbNodes, edges: dbEdges }));
                 }
 
-                // Set state with DB data
-                // const validEdges = validateEdges(dbNodes, dbEdges);
+                // ✅ Set nodes first before setting edges
                 setNodes(dbNodes);
-                setEdges(dbEdges);
-                dispatch({ type: "LOAD_DATA", payload: { nodes: dbNodes, edges: dbEdges } });
+                setTimeout(() => {
+                    setEdges(dbEdges);
+                    dispatch({ type: "LOAD_DATA", payload: { nodes: dbNodes, edges: dbEdges } });
+                }, 100); // ⏳ Delay to ensure nodes are registered
 
-            } else if (localNodes.length > 0 && localEdges.length > 0) {
-                // ✅ Fallback: Use local storage
+            } else if (localNodes.length > 0 || localEdges.length > 0) {
                 console.log("📌 Using local storage data");
-                // const validEdges = validateEdges(localNodes, localEdges);
+
                 setNodes(localNodes);
                 setEdges(localEdges);
+                console.log("📌 Local Storage Data:", JSON.stringify(localNodes, null, 2));
                 dispatch({ type: "LOAD_DATA", payload: { nodes: localNodes, edges: localEdges } });
 
             } else {
@@ -1535,41 +1710,30 @@ const PlaygroundExtEditor = () => {
     }, [pathname]);
 
     useEffect(() => {
-        // if (state.nodes.length === 0 && state.edges.length === 0) {
-        //     console.log("🗑️ No nodes and edges left. Clearing local storage.");
-        //     localStorage.removeItem(LOCAL_STORAGE_KEY);
-        // } 
-        if (!state.nodes.length && !state.edges.length) {
-            const savedGraph = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (savedGraph) {
-                console.log("📌 Local storage exists, skipping removal.");
-                return; // ✅ Prevent clearing local storage if data exists
-            }
+        if (isWorkFlowLoading) return;
 
-            console.log("🗑️ No nodes and edges left. Clearing local storage.");
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-        } else {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
-                nodes: state.nodes,
-                edges: state.edges
-            }));
+        if (state.nodes.length > 0) {
+            console.log("💾 Saving to local storage...");
+
+            const serializedState = JSON.stringify({
+                nodes: state.nodes.map(node => ({
+                    ...node,
+                    data: {
+                        ...node.data,
+                        metadata: {
+                            ...node.data.metadata,
+                            inputHandles: node.data.metadata.inputHandles || [],
+                            outputHandles: node.data.metadata.outputHandles || [],
+                        }
+                    }
+                })),
+                edges: state.edges,
+            });
+
+            localStorage.setItem(LOCAL_STORAGE_KEY, serializedState);
         }
-    }, [state.nodes, state.edges]);
 
-    useEffect(() => {
-        if (state.nodes.length > 0 && state.edges.length > 0) {
-            console.log("📌 Updating Nodes in ReactFlow:", state.nodes);
-            console.log("📌 Updating Edges in ReactFlow:", state.edges);
-            const validEdges = validateEdges(state.nodes, state.edges);
-
-            console.log("✅ Valid Edges after filtering:", validEdges);
-
-            setNodes(state.nodes);
-            setEdges(validEdges);
-
-            // console.log("✅ Updated Nodes & Edges:", state.nodes, validEdges);
-        }
-    }, [state.nodes, state.edges]);
+    }, [state.nodes, state.edges, isWorkFlowLoading]);
 
     useEffect(() => {
         setNodes(state.nodes);
@@ -1634,6 +1798,7 @@ const PlaygroundExtEditor = () => {
                                         nodes={nodes}
                                         edges={edges}
                                         nodeTypes={nodeTypes}
+                                        edgeTypes={edgeTypes}
                                         onNodesChange={handleNodesChange}
                                         onEdgesChange={handleEdgesChange}
                                         onEdgesDelete={handleEdgesDelete}
