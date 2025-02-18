@@ -1,7 +1,6 @@
 import React from 'react'
 import TestGraphCard from '../graphCard/TestGraphCard'
 import { EditorGraphType } from '../editor/[editorId]/playground_ext';
-// import { EditorGraphType } from '../../../types/EditorCanvasTypes'
 
 const GraphGrid = () => {
     const [graphs, setGraphs] = React.useState<EditorGraphType[]>([]);
@@ -24,13 +23,6 @@ const GraphGrid = () => {
 
     return (
         <>
-            {/* {graphs.map((graph, index) => (
-                <GraphCard
-                    key={index}
-                    graph={graph}
-                    deleteGraph={() => console.log('Delete graph', graph)}
-                />
-            ))} */}
             {graphs?.length ?
                 graphs.map((graph, index) => (
                     <TestGraphCard

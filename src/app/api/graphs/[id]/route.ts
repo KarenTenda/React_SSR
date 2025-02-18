@@ -23,7 +23,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 export async function POST(req: Request) {
     try {
         await dbConnect();
-        const { graph_id, nodes, edges } = await req.json();
+        const { graph_id, nodes, edges, subgraphs } = await req.json();
 
         // Check if graph already exists
         const existingGraph = await Graph.findOne({ graph_id });
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
             graph_id,
             nodes,
             edges,
+            subgraphs: subgraphs || [], // Ensure subgraphs is an array
             createdAt: new Date(),
             updatedAt: new Date(),
         });
@@ -53,8 +54,27 @@ export async function POST(req: Request) {
 // ✅ PUT: Update an existing graph
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
     try {
+        console.log("🔧 Connecting to DB...");
         await dbConnect();
-        const { nodes, edges } = await req.json();
+
+        const requestText = await req.text();
+        console.log("📦 Raw request body:", requestText);
+
+        // Try parsing JSON manually to catch potential JSON errors
+        let parsedData;
+        try {
+            parsedData = JSON.parse(requestText);
+        } catch (jsonError) {
+            console.error("❌ JSON Parse Error:", jsonError);
+            return NextResponse.json({ success: false, message: "Invalid JSON body", error: jsonError }, { status: 400 });
+        }
+
+        const { nodes, edges } = parsedData;
+        console.log("📥 Parsed request body:", JSON.stringify({ nodes, edges }, null, 2));
+
+        if (!nodes || !edges) {
+            return NextResponse.json({ success: false, message: "Missing nodes or edges data" }, { status: 400 });
+        }
 
         // Update graph
         const updatedGraph = await Graph.findOneAndUpdate(
@@ -63,10 +83,21 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             { new: true, upsert: true } // Creates if it doesn't exist
         );
 
+        if (!updatedGraph) {
+            throw new Error("Graph update failed");
+        }
+
+        console.log("✅ Graph successfully updated:", updatedGraph);
+
         return NextResponse.json({ success: true, message: "Graph updated successfully", graph: updatedGraph });
 
     } catch (error) {
-        console.error("Error updating graph:", error);
-        return NextResponse.json({ success: false, message: "Error updating graph" }, { status: 500 });
+        console.error("❌ Error updating graph:", error);
+
+        return NextResponse.json({
+            success: false,
+            message: "Error updating graph",
+            error: error,
+        }, { status: 500 });
     }
 }

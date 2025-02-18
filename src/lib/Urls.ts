@@ -31,6 +31,8 @@ const Urls = {
     fetchPhantomYoloInference: `http://${FASTAPI_HOST}:${FASTAPI_PORT}/yolo/inference`,
 
     fetchJSONServer:`http://${JSON_SERVER_HOST}:${JSON_SERVER_PORT}/stepsData`,
+    
+    fetchGraphs: `http://${LOCAL_HOST}:${LOCAL_PORT}/api/graphs`,
 
     fetchCreatedDataset: `http://${LOCAL_HOST}:${LOCAL_PORT}/api/createDatasets`,
     fetchInferenceResults:`http://${LOCAL_HOST}:${LOCAL_PORT}/api/run-inference`,

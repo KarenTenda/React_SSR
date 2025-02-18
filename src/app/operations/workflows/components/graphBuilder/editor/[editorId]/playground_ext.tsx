@@ -46,8 +46,10 @@ import { RegionStructure } from "@/app/operations/regions/structures/RegionStruc
 import useRegionService from "@/app/operations/regions/hooks/useRegions";
 import clsx from "clsx";
 import ClickableIconButton from "@/components/custom/buttons/ClickableIconButton";
-import { DeleteIcon, SaveIcon } from "@/public/assets/Icons";
+import { DatabaseIcon, DeleteIcon, SaveIcon } from "@/public/assets/Icons";
 import { usePathname } from "next/navigation";
+import axios from "axios";
+import CustomModal from "@/components/custom/modals/CustomModal";
 
 export type EditorGraphType = {
     graph_id: string
@@ -284,7 +286,7 @@ const EditorNodeCustomHandleData = {
     },
 }
 
-type datatype =
+export type datatype =
     | "string"
     | "number"
     | "boolean"
@@ -308,7 +310,7 @@ const DataTypesColors = {
     'InferenceResult': '#F39C12', // Golden Orange
 };
 
-type EditorHandle = {
+export type EditorHandle = {
     id: string;
     type: "source" | "target";
     datatype: datatype;
@@ -319,7 +321,7 @@ type EditorHandle = {
     };
 }
 
-type EditorEdge = Edge & {
+export type EditorEdge = Edge & {
     id: string;
     type: string;
     source: string;
@@ -1259,27 +1261,30 @@ const EditorSidebar = () => {
     }
 
     const handleSaveGraph = async () => {
+        const id = pathname.split('/').pop(); // Extract graph ID from URL
         const graphData = {
-            nodes: state.nodes,
-            edges: state.edges,
+            nodes: state.nodes || [],
+            edges: state.edges || [],
         };
 
         try {
-            const id = pathname.split('/').pop(); // Extract graph ID from URL
-
             console.log("📦 Saving Graph Data:", graphData);
 
-            const response = await fetch(`/api/graphs/${id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(graphData),
-            });
+            // const response = await fetch(`/api/graphs/${id}`, {
+            //     method: "PUT",
+            //     headers: {
+            //         "Content-Type": "application/json",
+            //     },
+            //     body: JSON.stringify(graphData),
+            // });
+            const response = await axios.put(`${Urls.fetchGraphs}/${id}`, graphData)
+            console.log("response", response)
 
-            const data = await response.json();
+            // const data = await response.json();
+            const data = response.data
 
             if (data.success) {
+                console.log("updated graph", data.graph)
                 toast({
                     title: "Graph Saved",
                     description: "Your graph has been successfully saved.",
@@ -1299,7 +1304,7 @@ const EditorSidebar = () => {
             console.error("❌ Error saving graph:", error);
             toast({
                 title: "Error",
-                description: "An error occurred while saving.",
+                description: `An error occurred while saving. ${error}`,
                 variant: "destructive",
             });
         }
@@ -1312,6 +1317,7 @@ const EditorSidebar = () => {
                 <TabsList className="bg-transparent sticky">
                     <ClickableIconButton
                         Icon={SaveIcon}
+
                         onClick={handleSaveGraph}
                         tooltipText="SaveGraph"
                     />
@@ -1410,12 +1416,97 @@ const EditorSidebar = () => {
     );
 };
 
+// ------------------------------------Conflict Modal-------------------------------------------
+
+const GraphDataConflictModal = ({
+    dbNodes, dbEdges,
+    localNodes, localEdges,
+    onConfirm, onCancel
+}: {
+    dbNodes: EditorNode[], dbEdges: EditorEdge[], localNodes: EditorNode[], localEdges: EditorEdge[],
+    onConfirm: (useDB: boolean) => void;
+    onCancel: () => void;
+}) => {
+    const [selectedSource, setSelectedSource] = useState<"db" | "local">("db");
+
+    const extractNodeInfo = (nodes: EditorNode[]) => {
+        return nodes.map(node => ({ id: node.id, type: node.type }));
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-[800px] dark:bg-neutral-900 dark:text-white">
+                <h2 className="text-xl font-bold mb-4">Data Conflict Detected</h2>
+                <p className="mb-4">Your local data is different from the database version. Choose which version to keep:</p>
+
+                <div className="grid grid-rows-2 gap-4">
+                    <div className="border p-3 rounded">
+                        <h3 className="flex gap-2 text-lg font-semibold"><DatabaseIcon/> Database Data</h3>
+                        <textarea
+                            readOnly
+                            className="w-full h-32 p-2 border rounded text-sm"
+                            value={JSON.stringify({ devices: extractNodeInfo(dbNodes), connectors: dbEdges.map(edge => edge.id) }, null, 2)}
+                        />
+                        <label className="flex items-center mt-2">
+                            <input
+                                type="radio"
+                                name="dataSource"
+                                value="db"
+                                checked={selectedSource === "db"}
+                                onChange={() => setSelectedSource("db")}
+                            />
+                            <span className="ml-2">Use Database Data</span>
+                        </label>
+                    </div>
+
+                    <div className="border p-3 rounded">
+                        <h3 className="text-lg font-semibold">💾 Local Data</h3>
+                        <textarea
+                            readOnly
+                            className="w-full h-32 p-2 border rounded text-sm"
+                            value={JSON.stringify({ devices: extractNodeInfo(localNodes), connectors: localEdges.map(edge => edge.id) }, null, 2)}
+                        />
+                        <label className="flex items-center mt-2">
+                            <input
+                                type="radio"
+                                name="dataSource"
+                                value="local"
+                                checked={selectedSource === "local"}
+                                onChange={() => setSelectedSource("local")}
+                            />
+                            <span className="ml-2">Use Local Data</span>
+                        </label>
+                    </div>
+                </div>
+
+                <p className="mt-4 font-medium">
+                    ✅ You are applying: <span className="text-blue-600">{selectedSource === "db" ? "Database Data" : "Local Data"}</span>
+                </p>
+
+                <div className="flex justify-end mt-4">
+                    <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded"
+                        onClick={() => onConfirm(selectedSource === "db")}
+                    >
+                        Confirm & Load
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ------------------------------------Main Editor Component------------------------------------
 
 const PlaygroundExtEditor = () => {
     const { state, dispatch } = usePlaygroundExtEditor();
     const [nodes, setNodes, onNodesChange] = useNodesState(state.nodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(state.edges);
+    const [showConflictModal, setShowConflictModal] = useState(false);
+    const [dbNodes, setDbNodes] = useState<EditorNode[]>([]);
+    const [dbEdges, setDbEdges] = useState<EditorEdge[]>([]);
+    const [localNodes, setLocalNodes] = useState<EditorNode[]>([]);
+    const [localEdges, setLocalEdges] = useState<EditorEdge[]>([]);
     const pathname = usePathname()
     const [isWorkFlowLoading, setIsWorkFlowLoading] = useState<boolean>(false)
 
@@ -1632,6 +1723,42 @@ const PlaygroundExtEditor = () => {
         });
     };
 
+    const handleResolveConflict = (useDB: boolean) => {
+        setShowConflictModal(false);
+        const resolvedNodes = useDB ? dbNodes : localNodes;
+        const resolvedEdges = useDB ? dbEdges : localEdges;
+
+        setNodes(resolvedNodes);
+        setEdges(resolvedEdges);
+        dispatch({ type: "LOAD_DATA", payload: { nodes: resolvedNodes, edges: resolvedEdges } });
+
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ nodes: resolvedNodes, edges: resolvedEdges }));
+    };
+
+    const handleCloseConflict = () => {
+        setShowConflictModal(false);
+    
+        const dbSize = dbNodes.length + dbEdges.length;
+        const localSize = localNodes.length + localEdges.length;
+    
+        const useDB = dbSize >= localSize; 
+    
+        toast({
+            title: "Default Selection Applied",
+            description: `Using ${useDB ? "Database Data" : "Local Data"}.`,
+            variant: "default",
+        });
+    
+        const defaultNodes = useDB ? dbNodes : localNodes;
+        const defaultEdges = useDB ? dbEdges : localEdges;
+    
+        setNodes(defaultNodes);
+        setEdges(defaultEdges);
+        dispatch({ type: "LOAD_DATA", payload: { nodes: defaultNodes, edges: defaultEdges } });
+    
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ nodes: defaultNodes, edges: defaultEdges }));
+    };
+
     useEffect(() => {
         const loadGraph = async () => {
             setIsWorkFlowLoading(true);
@@ -1643,10 +1770,10 @@ const PlaygroundExtEditor = () => {
                 return;
             }
 
-            let dbNodes: EditorNode[] = [];
-            let dbEdges: EditorEdge[] = [];
-            let localNodes: EditorNode[] = [];
-            let localEdges: EditorEdge[] = [];
+            let fetchedDBNodes: EditorNode[] = [];
+            let fetchedDBEdges: EditorEdge[] = [];
+            let savedLocalNodes: EditorNode[] = [];
+            let savedLocalEdges: EditorEdge[] = [];
 
             try {
                 // 🔹 Step 1: Fetch from database
@@ -1654,8 +1781,9 @@ const PlaygroundExtEditor = () => {
                 const data = await response.json();
 
                 if (data.success && data.graph) {
-                    dbNodes = data.graph.nodes;
-                    dbEdges = data.graph.edges;
+                    fetchedDBNodes = data.graph.nodes;
+                    fetchedDBEdges = data.graph.edges;
+                    console.log("📌 Loaded from DB:", { dbNodes, dbEdges });
                 } else {
                     console.warn("⚠️ No data found in DB.");
                 }
@@ -1667,35 +1795,39 @@ const PlaygroundExtEditor = () => {
             const savedGraph = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (savedGraph) {
                 const parsedGraph = JSON.parse(savedGraph);
-                localNodes = parsedGraph.nodes || [];
-                localEdges = parsedGraph.edges || [];
+                savedLocalNodes = parsedGraph.nodes || [];
+                savedLocalEdges = parsedGraph.edges || [];
                 console.log("📌 Loaded from local storage:", { localNodes, localEdges });
             }
 
             // 🔹 Step 3: Compare and update
-            if (dbNodes.length > 0 || dbEdges.length > 0) {
-                const isDifferent = JSON.stringify(dbNodes) !== JSON.stringify(localNodes) ||
-                    JSON.stringify(dbEdges) !== JSON.stringify(localEdges);
+            if ((fetchedDBNodes.length > 0 || fetchedDBEdges.length > 0) && (savedLocalNodes.length > 0 || savedLocalEdges.length > 0)) {
+                console.log("🔍 Comparing DB and Local Storage data...");
+
+                const isDifferent = JSON.stringify(fetchedDBNodes) !== JSON.stringify(savedLocalNodes) ||
+                    JSON.stringify(fetchedDBEdges) !== JSON.stringify(savedLocalEdges);
 
                 if (isDifferent) {
-                    console.log("🔄 Updating local storage with DB data");
-                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ nodes: dbNodes, edges: dbEdges }));
+                    setDbNodes(fetchedDBNodes);
+                    setDbEdges(fetchedDBEdges);
+                    setLocalNodes(savedLocalNodes);
+                    setLocalEdges(savedLocalEdges);
+                    setShowConflictModal(true);
                 }
 
-                // ✅ Set nodes first before setting edges
-                setNodes(dbNodes);
-                setTimeout(() => {
-                    setEdges(dbEdges);
-                    dispatch({ type: "LOAD_DATA", payload: { nodes: dbNodes, edges: dbEdges } });
-                }, 100); // ⏳ Delay to ensure nodes are registered
+            } else if (fetchedDBNodes.length > 0 || fetchedDBEdges.length > 0) {
+                console.log("📌 Using database data");
 
-            } else if (localNodes.length > 0 || localEdges.length > 0) {
+                setNodes(fetchedDBNodes);
+                setEdges(fetchedDBEdges);
+                dispatch({ type: "LOAD_DATA", payload: { nodes: fetchedDBNodes, edges: fetchedDBEdges } });
+
+            } else if (savedLocalNodes.length > 0 || savedLocalEdges.length > 0) {
                 console.log("📌 Using local storage data");
 
-                setNodes(localNodes);
-                setEdges(localEdges);
-                console.log("📌 Local Storage Data:", JSON.stringify(localNodes, null, 2));
-                dispatch({ type: "LOAD_DATA", payload: { nodes: localNodes, edges: localEdges } });
+                setNodes(savedLocalNodes);
+                setEdges(savedLocalEdges);
+                dispatch({ type: "LOAD_DATA", payload: { nodes: savedLocalNodes, edges: savedLocalEdges } });
 
             } else {
                 console.warn("⚠️ No nodes or edges found. Initializing empty state.");
@@ -1744,27 +1876,6 @@ const PlaygroundExtEditor = () => {
     }, [state.edges, setEdges]);
 
     return (
-        // <div className="flex h-screen">
-
-        //     <div className="w-full h-full" onDrop={onDrop} onDragOver={onDragOver}>
-        //         <ReactFlow
-        //             nodes={nodes}
-        //             edges={edges}
-        //             nodeTypes={nodeTypes}
-        //             onNodesChange={handleNodesChange}
-        //             onEdgesChange={handleEdgesChange}
-        //             onEdgesDelete={handleEdgesDelete}
-        //             onConnect={onConnect}
-        //             onNodeClick={onNodeClick}
-        //             fitView
-        //         >
-        //             <Background />
-        //             <MiniMap />
-        //             <Controls />
-        //         </ReactFlow>
-        //     </div>
-        //     <EditorSidebar />
-        // </div>
         <div>
             <ResizablePanelGroup direction="horizontal">
                 <ResizablePanel defaultSize={70}>
@@ -1841,6 +1952,21 @@ const PlaygroundExtEditor = () => {
                     )}
                 </ResizablePanel>
             </ResizablePanelGroup>
+            <CustomModal
+                title="Data conflict detected"
+                description="Looks like the database and local state have different data. Check the data you wish to use!"
+                open={showConflictModal}
+                onClose={handleCloseConflict}
+            >
+                <GraphDataConflictModal
+                    dbNodes={dbNodes}
+                    dbEdges={dbEdges}
+                    localNodes={localNodes}
+                    localEdges={localEdges}
+                    onConfirm={handleResolveConflict}
+                    onCancel={handleCloseConflict}
+                />
+            </CustomModal>
         </div>
     );
 };
