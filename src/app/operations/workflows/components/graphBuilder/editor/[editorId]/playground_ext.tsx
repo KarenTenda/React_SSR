@@ -120,7 +120,7 @@ const EditorNodeCustomHandleData = {
         ],
     },
     "Image Device": {
-        inputs: 0,
+        inputs: 1,
         outputs: 3,
         inputHandles: [
             {
@@ -199,6 +199,7 @@ const EditorNodeCustomHandleData = {
                 datatype: 'ImageObject',
                 dataTypeColor: 'ImageObject',
                 data: { cameraObject: null },
+                settings: { immutable: true },
             },
             {
                 id: uuidv4(),
@@ -206,6 +207,7 @@ const EditorNodeCustomHandleData = {
                 datatype: 'ModelData',
                 dataTypeColor: 'ModelData',
                 data: { modelId: '', modelObject: null },
+                settings: { immutable: true },
             },
             {
                 id: uuidv4(),
@@ -213,6 +215,7 @@ const EditorNodeCustomHandleData = {
                 datatype: 'RegionData',
                 dataTypeColor: 'RegionData',
                 data: { regionId: '', regionObject: null },
+                settings: { immutable: true },
             },
         ],
         outputHandles: [
@@ -228,7 +231,7 @@ const EditorNodeCustomHandleData = {
     },
     "Communications Device": {
         inputs: 2,
-        outputs: 1,
+        outputs: 3,
         inputHandles: [
             {
                 id: uuidv4(),
@@ -260,29 +263,46 @@ const EditorNodeCustomHandleData = {
                 data: { data: null },
                 settings: { immutable: true },
             },
+            {
+                id: uuidv4(),
+                type: 'target',
+                datatype: 'InferenceResult',
+                dataTypeColor: 'InferenceResult',
+                data: {
+                    type: '',
+                    results: [],
+                    regionID: '',
+                    cameraID: '',
+                    modelID: '',
+                },
+            },
+            {
+                id: uuidv4(),
+                type: 'target',
+                datatype: 'boolean',
+                dataTypeColor: 'boolean',
+                data: false,
+            }
         ],
     },
     "Transform Device": {
-        inputs: 1,
+        inputs: 2,
         outputs: 1,
         inputHandles: [
+            {
+                id: uuidv4(),
+                type: 'target',
+                datatype: 'boolean',
+                dataTypeColor: 'boolean',
+                data: false,
+            },
             {
                 id: uuidv4(),
                 type: 'target',
                 datatype: 'InferenceResult',
                 dataTypeColor: 'InferenceResult',
             },
-        ],
-        outputHandles: [
-            {
-                id: uuidv4(),
-                type: "source",
-                datatype: "any",
-                dataTypeColor: "any",
-                data: { data: null },
-                settings: { immutable: true },
-            },
-        ],
+        ]
     },
 }
 
@@ -316,6 +336,7 @@ export type EditorHandle = {
     datatype: datatype;
     dataTypeColor: keyof typeof DataTypesColors;
     data: any;
+    hasData?: boolean;
     settings: {
         immutable: boolean;
     };
@@ -442,11 +463,11 @@ const editorReducer = (state: EditorState, action: EditorActions): EditorState =
             return { ...state, edges: [...state.edges, action.payload] };
         case "DELETE_EDGE":
             console.log("🗑️ Deleting Edge:", action.payload.id);
-            console.log("Before:", state.edges);
+            // console.log("Before:", state.edges);
 
             const updatedEdges = state.edges.filter(edge => edge.id !== action.payload.id);
 
-            console.log("After:", updatedEdges);
+            // console.log("After:", updatedEdges);
             return {
                 ...state,
                 edges: updatedEdges
@@ -525,6 +546,98 @@ type CustomNodeHandleProps = HandleProps & {
     handleData: EditorHandle;
 };
 
+// const CustomNodeHandle = ({ handleData, ...props }: CustomNodeHandleProps) => {
+//     const { state } = usePlaygroundExtEditor();
+//     const { toast } = useToast();
+
+//     const isSelected = state.selectedNode?.data.metadata.selectedHandle?.id === props.id;
+
+//     return (
+//         <Handle
+//             {...props}
+//             style={{
+//                 ...props.style,
+//                 backgroundColor: isSelected ? 'salmon' : `${DataTypesColors[handleData.datatype]}`,
+//                 border: isSelected ? '2px solid salmon' : `${DataTypesColors[handleData.datatype]}`,
+//                 boxShadow: isSelected ? '0 0 10px 2px salmon' : 'none',
+//                 transition: 'box-shadow 0.3s ease'
+//             }}
+//             isValidConnection={(connection) => {
+
+//                 // Find the source and target nodes
+//                 const sourceNode = state.nodes.find(node => node.id === connection.source);
+//                 const targetNode = state.nodes.find(node => node.id === connection.target);
+//                 // console.log('State Nodes:', JSON.stringify(state.nodes, null, 2));
+//                 // console.log('Source Node:', JSON.stringify(sourceNode, null, 2));
+//                 // console.log('Target Node:', JSON.stringify(targetNode, null, 2));
+
+//                 if (!sourceNode || !targetNode) {
+//                     console.error('Missing source or target node');
+//                     toast({
+//                         title: t('Missing Nodes'),
+//                         variant: 'destructive',
+//                         description: t('Missing source or target nodes.'),
+//                         duration: 5000,
+//                         action: <ToastAction altText="Try again">Try again</ToastAction>,
+
+//                     });
+//                     return false;
+//                 }
+
+//                 // Find the correct handles
+//                 const sourceHandle = sourceNode.data.metadata.outputHandles.find(
+//                     handle => handle.id === connection.sourceHandle
+//                 );
+//                 const targetHandle = targetNode.data.metadata.inputHandles.find(
+//                     handle => handle.id === connection.targetHandle
+//                 );
+
+//                 // console.log("🎯 Checking handles...");
+//                 // console.log("handleData", handleData)
+//                 // console.log("🔗 Connection Source Handle ID:", connection.sourceHandle);
+//                 // console.log("✅ Found Source Handle:", sourceHandle);
+//                 // console.log("🔗 Connection Target Handle ID:", connection.targetHandle);
+//                 // console.log("✅ Found Target Handle:", targetHandle);
+
+//                 // const sourceHandle = sourceNode.data.metadata.outputHandles.find(handle => handle.id === connection.sourceHandle);
+//                 // const targetHandle = targetNode.data.metadata.inputHandles.find(handle => handle.id === connection.targetHandle);
+
+//                 if (!sourceHandle || !targetHandle) {
+//                     console.error('Missing source or target handle:', { sourceHandle, targetHandle });
+//                     toast({
+//                         title: t('Missing Handles'),
+//                         variant: 'destructive',
+//                         description: t('Missing source or target handle. Check if Node was updated correctly'),
+//                         duration: 5000,
+//                         action: <ToastAction altText="Try again">Try again</ToastAction>,
+
+//                     });
+//                     return false;
+//                 }
+
+//                 // console.log('Checking connection between:', sourceHandle, 'and', targetHandle);
+
+//                 // Ensure datatype matches
+//                 if (sourceHandle.datatype !== targetHandle.datatype) {
+//                     console.error(`Datatype mismatch: ${sourceHandle.datatype} vs ${targetHandle.datatype}`);
+//                     toast({
+//                         title: t('Datatype Mismatch'),
+//                         variant: 'destructive',
+//                         description: t('The datatypes of the source and target handles do not match.'),
+//                         duration: 5000,
+//                         action: <ToastAction altText="Try again">Try again</ToastAction>,
+
+//                     });
+//                     return false;
+//                 }
+
+//                 return true; 
+//             }}
+//             className="!-bottom-2 !h-4 !w-4 dark:bg-neutral-800"
+//         />
+//     );
+// };
+
 const CustomNodeHandle = ({ handleData, ...props }: CustomNodeHandleProps) => {
     const { state } = usePlaygroundExtEditor();
     const { toast } = useToast();
@@ -542,23 +655,18 @@ const CustomNodeHandle = ({ handleData, ...props }: CustomNodeHandleProps) => {
                 transition: 'box-shadow 0.3s ease'
             }}
             isValidConnection={(connection) => {
-
                 // Find the source and target nodes
                 const sourceNode = state.nodes.find(node => node.id === connection.source);
                 const targetNode = state.nodes.find(node => node.id === connection.target);
-                // console.log('State Nodes:', JSON.stringify(state.nodes, null, 2));
-                // console.log('Source Node:', JSON.stringify(sourceNode, null, 2));
-                // console.log('Target Node:', JSON.stringify(targetNode, null, 2));
 
                 if (!sourceNode || !targetNode) {
                     console.error('Missing source or target node');
                     toast({
-                        title: t('Missing Nodes'),
+                        title: 'Missing Nodes',
                         variant: 'destructive',
-                        description: t('Missing source or target nodes.'),
+                        description: 'Missing source or target nodes.',
                         duration: 5000,
                         action: <ToastAction altText="Try again">Try again</ToastAction>,
-
                     });
                     return false;
                 }
@@ -571,90 +679,33 @@ const CustomNodeHandle = ({ handleData, ...props }: CustomNodeHandleProps) => {
                     handle => handle.id === connection.targetHandle
                 );
 
-                // console.log("🎯 Checking handles...");
-                // console.log("handleData", handleData)
-                // console.log("🔗 Connection Source Handle ID:", connection.sourceHandle);
-                // console.log("✅ Found Source Handle:", sourceHandle);
-                // console.log("🔗 Connection Target Handle ID:", connection.targetHandle);
-                // console.log("✅ Found Target Handle:", targetHandle);
-
-                // const sourceHandle = sourceNode.data.metadata.outputHandles.find(handle => handle.id === connection.sourceHandle);
-                // const targetHandle = targetNode.data.metadata.inputHandles.find(handle => handle.id === connection.targetHandle);
-
                 if (!sourceHandle || !targetHandle) {
                     console.error('Missing source or target handle:', { sourceHandle, targetHandle });
                     toast({
-                        title: t('Missing Handles'),
+                        title: 'Missing Handles',
                         variant: 'destructive',
-                        description: t('Missing source or target handle. Check if Node was updated correctly'),
+                        description: 'Missing source or target handle. Check if Node was updated correctly',
                         duration: 5000,
                         action: <ToastAction altText="Try again">Try again</ToastAction>,
-
                     });
                     return false;
                 }
-
-                // console.log('Checking connection between:', sourceHandle, 'and', targetHandle);
 
                 // Ensure datatype matches
                 if (sourceHandle.datatype !== targetHandle.datatype) {
                     console.error(`Datatype mismatch: ${sourceHandle.datatype} vs ${targetHandle.datatype}`);
                     toast({
-                        title: t('Datatype Mismatch'),
+                        title: 'Datatype Mismatch',
                         variant: 'destructive',
-                        description: t('The datatypes of the source and target handles do not match.'),
+                        description: 'The datatypes of the source and target handles do not match.',
                         duration: 5000,
                         action: <ToastAction altText="Try again">Try again</ToastAction>,
-
                     });
                     return false;
                 }
 
-                return true; // Allow connection
+                return true;
             }}
-            // isValidConnection={(connection) => {
-            //     console.log('🎯 Checking handles...');
-
-            //     // ✅ Print latest state before checking
-            //     console.log("🔎 Current State Nodes:", JSON.stringify(state.nodes, null, 2));
-
-            //     const sourceNode = state.nodes.find(node => node.id === connection.source);
-            //     const targetNode = state.nodes.find(node => node.id === connection.target);
-
-            //     if (!sourceNode || !targetNode) {
-            //         console.error('❌ Missing source or target node');
-            //         return false;
-            //     }
-
-            //     // ✅ Delay checking until nodes are updated
-            //     setTimeout(() => {
-            //         const updatedSourceNode = state.nodes.find(node => node.id === connection.source);
-            //         const updatedTargetNode = state.nodes.find(node => node.id === connection.target);
-
-            //         if (!updatedSourceNode || !updatedTargetNode) return false;
-
-            //         const sourceHandle = updatedSourceNode.data.metadata.outputHandles.find(
-            //             handle => handle.id === connection.sourceHandle
-            //         );
-            //         const targetHandle = updatedTargetNode.data.metadata.inputHandles.find(
-            //             handle => handle.id === connection.targetHandle
-            //         );
-
-            //         console.log('🔗 Connection Source Handle ID:', connection.sourceHandle);
-            //         console.log('✅ Found Source Handle:', sourceHandle);
-            //         console.log('🔗 Connection Target Handle ID:', connection.targetHandle);
-            //         console.log('✅ Found Target Handle:', targetHandle);
-
-            //         if (!sourceHandle || !targetHandle) {
-            //             console.warn("⚠️ Handles not found after delay.");
-            //             return false;
-            //         }
-
-            //         return sourceHandle.datatype === targetHandle.datatype;
-            //     }, 100);
-
-            //     return false; // Default to false until state updates
-            // }}
             className="!-bottom-2 !h-4 !w-4 dark:bg-neutral-800"
         />
     );
@@ -683,6 +734,9 @@ const CustomEdge = ({
         targetPosition,
     });
 
+    const edgeData = state.edges.find(edge => edge.id === id);
+    const hasData = edgeData?.data?.sourceHandleData?.hasData || false;
+
     const onEdgeClick = () => {
         // setEdges((edges) => edges.filter((edge) => edge.id !== id));
         dispatch({ type: "DELETE_EDGE", payload: { id } });
@@ -696,7 +750,7 @@ const CustomEdge = ({
     return (
         <>
             {/* Render the base edge */}
-            <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+            <BaseEdge path={edgePath} markerEnd={markerEnd} style={{ ...style, strokeDasharray: hasData ? '5,5' : 'none' }} />
 
             {/* Delete button inside EdgeLabelRenderer */}
             <EdgeLabelRenderer>
@@ -771,7 +825,7 @@ const CustomNodeCard = ({ id, data }: { id: string; data: EditorNode['data'] }) 
                     type="target"
                     position={Position.Left}
                     style={{
-                        top: `${index * 20 + 10}px`,
+                        top: `${index * 20 + 20}px`,
                     }}
                     id={(handle as EditorHandle).id}
                 />
@@ -784,7 +838,7 @@ const CustomNodeCard = ({ id, data }: { id: string; data: EditorNode['data'] }) 
                     type="source"
                     position={Position.Right}
                     style={{
-                        top: `${index * 20 + 10}px`,
+                        top: `${index * 20 + 20}px`,
                     }}
                     id={(handle as EditorHandle).id}
                 />
@@ -835,7 +889,11 @@ const CameraProviderNode = ({ id, data, cameras }: { id: string; data: EditorNod
                     ...state.selectedNode!.data.metadata,
                     outputHandles: state.selectedNode!.data.metadata.outputHandles.map(handle =>
                         handle.type === "source"
-                            ? { ...handle, data: { cameraId: camera.id } }  // ✅ Update Data, Keep ID
+                            ? {
+                                ...handle,
+                                hasData: true,
+                                data: { cameraId: camera.id }
+                            }
                             : handle
                     ),
                 },
@@ -848,7 +906,7 @@ const CameraProviderNode = ({ id, data, cameras }: { id: string; data: EditorNod
         });
 
         // ✅ Reapply edges to ensure they don't break
-        reapplyEdges(updatedNode);
+        // reapplyEdges(updatedNode);
     };
 
     // ✅ Function to update edges when nodes change
@@ -926,7 +984,11 @@ const RegionProviderNode = ({ id, data, regions }: { id: string; data: EditorNod
         // ✅ Update the output handle with regionId & regionObject
         const updatedOutputs = state.selectedNode!.data.metadata.outputHandles.map(handle =>
             handle.type === "source"
-                ? { ...handle, data: { regionId: region.id, regionObject: region } }
+                ? {
+                    ...handle,
+                    hasData: true,
+                    data: { regionId: region.id, regionObject: region }
+                }
                 : handle
         );
 
@@ -1006,7 +1068,11 @@ const ModelProviderNode = ({ id, data }: { id: string; data: EditorNode['data'] 
         // ✅ Update the output handle with modelId & modelObject
         const updatedOutputs = state.nodes.find(node => node.id === id)?.data.metadata.outputHandles.map(handle =>
             handle.type === "source"
-                ? { ...handle, data: { modelId, modelObject: {} } }
+                ? {
+                    ...handle,
+                    hasData: true,
+                    data: { modelId, modelObject: {} }
+                }
                 : handle
         );
 
@@ -1077,11 +1143,23 @@ const ImageDeviceNode = ({ id, data, cameras }: {
         const updatedOutputs = state.nodes.find(node => node.id === id)?.data.metadata.outputHandles?.map((handle) => {
             switch (handle.datatype) {
                 case 'string':
-                    return { ...handle, data: { cameraId: inputValue } };
+                    return {
+                        ...handle,
+                        hasData: true,
+                        data: { cameraId: inputValue }
+                    };
                 case 'ImageObject':
-                    return { ...handle, data: { cameraObject: foundCamera } };
+                    return {
+                        ...handle,
+                        hasData: true,
+                        data: { cameraObject: foundCamera }
+                    };
                 case 'bytes':
-                    return { ...handle, data: { cameraImage: `${Urls.fetchPhantomCamera}/${inputValue}/image` } };
+                    return {
+                        ...handle,
+                        hasData: true,
+                        data: { cameraImage: `${Urls.fetchPhantomCamera}/${inputValue}/image` }
+                    };
                 default:
                     return handle;
             }
@@ -1106,7 +1184,7 @@ const ImageDeviceNode = ({ id, data, cameras }: {
             },
         });
 
-        reapplyEdges(updatedNode);
+        // reapplyEdges(updatedNode);
 
     }, [inputValue]);
 
@@ -1143,7 +1221,7 @@ const ImageDeviceNode = ({ id, data, cameras }: {
     );
 };
 
-const InferenceDeviceNode = ({ id, data, cameras }: { id: string; data: EditorNode['data']; cameras: CameraStructure[] }) => {
+const InferenceDeviceNode = ({ id, data }: { id: string; data: EditorNode['data'] }) => {
     const { state, dispatch } = usePlaygroundExtEditor();
 
     // ✅ Get the latest input values from input handles
@@ -1310,7 +1388,6 @@ const EditorSidebar = () => {
         }
     };
 
-
     return (
         <>
             <Tabs defaultValue="actions" className=" pb-24">
@@ -1384,7 +1461,6 @@ const EditorSidebar = () => {
                                     <InferenceDeviceNode
                                         id={state.selectedNode.id}
                                         data={state.selectedNode.data}
-                                        cameras={cameras}
                                     />
                                 )}
 
@@ -1441,7 +1517,7 @@ const GraphDataConflictModal = ({
 
                 <div className="grid grid-rows-2 gap-4">
                     <div className="border p-3 rounded">
-                        <h3 className="flex gap-2 text-lg font-semibold"><DatabaseIcon/> Database Data</h3>
+                        <h3 className="flex gap-2 text-lg font-semibold"><DatabaseIcon /> Database Data</h3>
                         <textarea
                             readOnly
                             className="w-full h-32 p-2 border rounded text-sm"
@@ -1534,7 +1610,7 @@ const PlaygroundExtEditor = () => {
 
     const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
         const updatedEdges = applyEdgeChanges(changes, state.edges);
-        // console.log("🔄 Updated Edges in handleEdgesChange:", updatedEdges);
+        console.log("🔄 Updated Edges in handleEdgesChange:", updatedEdges);
         setEdges(updatedEdges as EditorEdge[]);
         dispatch({ type: "UPDATE_EDGES", payload: changes });
     }, [dispatch, setEdges, state.edges]);
@@ -1563,6 +1639,91 @@ const PlaygroundExtEditor = () => {
         [dispatch]
     );
 
+    // const onConnect = useCallback(
+    //     (params: Connection) => {
+    //         const { source, target, sourceHandle, targetHandle } = params;
+    //         console.log("🔗 Connection Params:", params);
+
+    //         const sourceNode = state.nodes.find(node => node.id === params.source);
+    //         const targetNode = state.nodes.find(node => node.id === params.target);
+
+    //         if (!sourceNode || !targetNode) {
+    //             console.error("❌ Missing source or target node:", { source: params.source, target: params.target });
+    //             return;
+    //         }
+
+    //         const sourceHandleData = sourceNode.data.metadata.outputHandles.find(handle => handle.id === params.sourceHandle);
+    //         const targetHandleData = targetNode.data.metadata.inputHandles.find(handle => handle.id === params.targetHandle);
+
+    //         console.log("🔗 Source Handle Data:", JSON.stringify(sourceHandleData, null, 2));
+    //         console.log("🔗 Target Handle Data:", JSON.stringify(targetHandleData, null, 2));
+
+    //         if (!sourceHandleData || !targetHandleData) {
+    //             console.warn(`⚠️ Missing source or target handle.`, { sourceHandleData, targetHandleData });
+    //             return;
+    //         }
+
+    //         // if (sourceHandleData.type !== "source") {
+    //         //     console.error(`❌ Source handle is not 'source' type. Fixing:`, sourceHandleData);
+    //         //     sourceHandleData.type = "source"; // 🔥 Fix incorrect handle type
+    //         // }
+
+    //         // if (targetHandleData.type !== "target") {
+    //         //     console.error(`❌ Target handle is not 'target' type. Fixing:`, targetHandleData);
+    //         //     targetHandleData.type = "target"; // 🔥 Fix incorrect handle type
+    //         // }
+
+    //         // ✅ Update target node to reflect input changes
+    //         const updatedTargetNode = {
+    //             ...targetNode,
+    //             data: {
+    //                 ...targetNode.data,
+    //                 metadata: {
+    //                     ...targetNode.data.metadata,
+    //                     inputHandles: targetNode.data.metadata.inputHandles.map(handle =>
+    //                         handle.id === targetHandleData.id
+    //                             ? { ...handle, data: sourceHandleData.data }
+    //                             : handle
+    //                     ),
+    //                 },
+    //             },
+    //         };
+
+    //         dispatch({
+    //             type: "PROPAGATE_DATA",
+    //             payload: {
+    //                 targetNode: targetNode,
+    //                 targetHandle: targetHandleData,
+    //                 sourceHandle: sourceHandleData,
+    //                 value: sourceHandleData.data
+    //             }
+    //         })
+
+    //         dispatch({ type: "UPDATE_NODE", payload: { nodeId: updatedTargetNode.id, value: updatedTargetNode } });
+
+    //         const new_edge = {
+    //             id: uuidv4(),
+    //             type: 'deletable',
+    //             source: sourceNode.id,
+    //             target: targetNode.id,
+    //             sourceHandleId: sourceHandleData.id,
+    //             targetHandleId: targetHandleData.id,
+    //             data: {
+    //                 sourceHandleData,
+    //                 targetHandleData,
+    //             }
+    //         };
+
+    //         console.log("🔗 New Edge created:", JSON.stringify(new_edge, null, 2));
+
+    //         dispatch({
+    //             type: "ADD_EDGE",
+    //             payload: new_edge,
+    //         });
+    //     },
+    //     [dispatch, state.nodes]
+    // );
+
     const onConnect = useCallback(
         (params: Connection) => {
             const { source, target, sourceHandle, targetHandle } = params;
@@ -1579,8 +1740,8 @@ const PlaygroundExtEditor = () => {
             const sourceHandleData = sourceNode.data.metadata.outputHandles.find(handle => handle.id === params.sourceHandle);
             const targetHandleData = targetNode.data.metadata.inputHandles.find(handle => handle.id === params.targetHandle);
 
-            console.log("🔗 Source Handle Data:", JSON.stringify(sourceHandleData, null, 2));
-            console.log("🔗 Target Handle Data:", JSON.stringify(targetHandleData, null, 2));
+            // console.log("🔗 Source Handle Data:", JSON.stringify(sourceHandleData, null, 2));
+            // console.log("🔗 Target Handle Data:", JSON.stringify(targetHandleData, null, 2));
 
             if (!sourceHandleData || !targetHandleData) {
                 console.warn(`⚠️ Missing source or target handle.`, { sourceHandleData, targetHandleData });
@@ -1606,7 +1767,7 @@ const PlaygroundExtEditor = () => {
                         ...targetNode.data.metadata,
                         inputHandles: targetNode.data.metadata.inputHandles.map(handle =>
                             handle.id === targetHandleData.id
-                                ? { ...handle, data: sourceHandleData.data }
+                                ? { ...handle, data: sourceHandleData.data, hasData: true } // Set hasData to true
                                 : handle
                         ),
                     },
@@ -1630,10 +1791,10 @@ const PlaygroundExtEditor = () => {
                 type: 'deletable',
                 source: sourceNode.id,
                 target: targetNode.id,
-                sourceHandleId: sourceHandleData.id,
-                targetHandleId: targetHandleData.id,
+                sourceHandleId: sourceHandleData?.id ?? "UNKNOWN_SOURCE",
+                targetHandleId: targetHandleData?.id ?? "UNKNOWN_TARGET",
                 data: {
-                    sourceHandleData,
+                    sourceHandleData: { ...sourceHandleData, hasData: true }, // Set hasData to true
                     targetHandleData,
                 }
             };
@@ -1737,25 +1898,25 @@ const PlaygroundExtEditor = () => {
 
     const handleCloseConflict = () => {
         setShowConflictModal(false);
-    
+
         const dbSize = dbNodes.length + dbEdges.length;
         const localSize = localNodes.length + localEdges.length;
-    
-        const useDB = dbSize >= localSize; 
-    
+
+        const useDB = dbSize >= localSize;
+
         toast({
             title: "Default Selection Applied",
             description: `Using ${useDB ? "Database Data" : "Local Data"}.`,
             variant: "default",
         });
-    
+
         const defaultNodes = useDB ? dbNodes : localNodes;
         const defaultEdges = useDB ? dbEdges : localEdges;
-    
+
         setNodes(defaultNodes);
         setEdges(defaultEdges);
         dispatch({ type: "LOAD_DATA", payload: { nodes: defaultNodes, edges: defaultEdges } });
-    
+
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ nodes: defaultNodes, edges: defaultEdges }));
     };
 
@@ -1912,7 +2073,7 @@ const PlaygroundExtEditor = () => {
                                         edgeTypes={edgeTypes}
                                         onNodesChange={handleNodesChange}
                                         onEdgesChange={handleEdgesChange}
-                                        onEdgesDelete={handleEdgesDelete}
+                                        // onEdgesDelete={handleEdgesDelete}
                                         onConnect={onConnect}
                                         onNodeClick={onNodeClick}
                                         fitView
@@ -1972,3 +2133,8 @@ const PlaygroundExtEditor = () => {
 };
 
 export default PlaygroundExtEditor;
+
+
+
+// fix the issue with inference node not connecting to the targets from source
+// Implement code node that's AI generated

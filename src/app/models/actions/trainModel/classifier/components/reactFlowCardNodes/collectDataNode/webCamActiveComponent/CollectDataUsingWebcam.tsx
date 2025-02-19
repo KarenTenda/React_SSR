@@ -137,9 +137,7 @@ const CollectDataUsingWebcam = ({
   const aspect = 1;
 
   const [isCapturing, setIsCapturing] = useState(false);
-  const [isContinuousCapture, setIsContinuousCapture] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  // const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [isPaused, setIsPaused] = useState(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -195,7 +193,6 @@ const CollectDataUsingWebcam = ({
           previewCanvasRef.current.height
         );
 
-        // Convert the cropped canvas to an image data URL
         const croppedUrl = previewCanvasRef.current.toDataURL('image/jpeg');
         // setCroppedImageSrc(croppedUrl);
       }
@@ -282,8 +279,6 @@ const CollectDataUsingWebcam = ({
     }
   };
 
-
-
   const updateRegion = async (regionToUpdate: RegionStructure) => {
     try {
       if (!regionToUpdate?.id) {
@@ -328,6 +323,7 @@ const CollectDataUsingWebcam = ({
         canvas.height = tempImage.height;
         ctx?.drawImage(tempImage, 0, 0, canvas.width, canvas.height);
         const imageUrl = canvas.toDataURL("image/jpeg");
+        console.log("Captured Image URL:", imageUrl);
         setCapturedImages((prevImages) => [...prevImages, imageUrl]);
         //   setCardCapturedImages(prev => ({
         //     ...prev,
@@ -375,7 +371,6 @@ const CollectDataUsingWebcam = ({
     const interval = 1000 / fps;
 
     if (holdToRecord) {
-      // "Hold to Record" is ON
       if (isHolding) {
         console.log("Hold to Record: Capturing started while holding the button.");
 
@@ -387,7 +382,6 @@ const CollectDataUsingWebcam = ({
           }
         }, interval);
       } else {
-        // Stop capturing when button is released
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
@@ -397,7 +391,6 @@ const CollectDataUsingWebcam = ({
 
 
     } else {
-      // "Hold to Record" is OFF
       if (isCapturing) {
         console.log("Already capturing, ignoring start request.");
         return;
@@ -425,11 +418,11 @@ const CollectDataUsingWebcam = ({
       // }, interval + delay * 1000);
 
       const totalDuration = duration * 1000;
-      const adjustedInterval = Math.max(interval, delay * 1000); // Use the longer of `interval` or `delay`
+      const adjustedInterval = Math.max(interval, delay * 1000); 
 
       const capture = async () => {
         if (timeElapsed >= totalDuration) {
-          handleStop(); // Automatically stop after the specified duration
+          handleStop(); 
           return;
         }
 
@@ -440,11 +433,11 @@ const CollectDataUsingWebcam = ({
         }
 
         timeElapsed += adjustedInterval;
-        setTimeout(capture, adjustedInterval); // Recursive timeout for image capture
+        setTimeout(capture, adjustedInterval);
       };
 
-      // Start the first capture with the delay
-      await new Promise((resolve) => setTimeout(resolve, delay * 1000)); // Initial delay
+
+      await new Promise((resolve) => setTimeout(resolve, delay * 1000)); 
       capture();
     }
   };
@@ -629,9 +622,9 @@ const CollectDataUsingWebcam = ({
             className="text-sm"
             variant="outline"
             size="sm"
-            onPointerDown={() => handleStart(true)}  // Start capturing on press
-            onPointerUp={() => handleStart(false)}   // Stop capturing when released
-            onPointerLeave={() => handleStart(false)} // Stop capturing if the mouse leaves the button
+            onPointerDown={() => handleStart(true)}  
+            onPointerUp={() => handleStart(false)}   
+            onPointerLeave={() => handleStart(false)} 
             disabled={isCapturing && isPaused}
           >
             {holdToRecord ? 'Hold to Record' : 'Start'}
@@ -642,7 +635,7 @@ const CollectDataUsingWebcam = ({
               variant="ghost"
               size="icon"
               onClick={handleResume}
-              disabled={!isPaused} // Disabled if not paused
+              disabled={!isPaused} 
             >
               <PlayIcon className="mr-2" />
             </Button>
@@ -674,7 +667,6 @@ const CollectDataUsingWebcam = ({
             variant="ghost"
             size="icon"
             onClick={handleRestart}
-            // disable if there're no captured images and not capturing
             disabled={capturedImages.length === 0}
           >
             <RefreshCcw className="mr-2" />

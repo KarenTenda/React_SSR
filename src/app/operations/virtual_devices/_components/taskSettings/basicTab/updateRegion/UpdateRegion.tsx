@@ -28,15 +28,13 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
     const [polygonPoints, setPolygonPoints] = useState<{ x: number; y: number }[]>([]);
     const draggingIndex = useRef<number | null>(null);
 
-    // **1️⃣ Fetch the latest regions every 5 seconds (Real-time Updates)**
     useEffect(() => {
         const fetchRegions = async () => {
             try {
                 const response = await axios.get(`${Urls.fetchRegions}/`);
-                const newRegions = response.data?.regions || response.data; // Ensure we get the correct field
+                const newRegions = response.data?.regions || response.data; 
                 console.log("Fetched Regions:", newRegions);
 
-                // Ensure it's an array before updating
                 if (Array.isArray(newRegions) && JSON.stringify(newRegions) !== JSON.stringify(regions)) {
                     setRegions(newRegions);
                     setRegionIDs(newRegions.map((r: RegionStructure) => r.id));
@@ -46,12 +44,10 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
             }
         };
 
-        // Poll every 10 seconds
         const interval = setInterval(fetchRegions, 10000);
         return () => clearInterval(interval);
     }, [regions]);
 
-    // **2️⃣ Get the selected region from the backend**
     useEffect(() => {
         if (!regions.length) return;
         const region = regions.find((r) => r.id === selectedRegion);
@@ -63,11 +59,9 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
         }
     }, [selectedRegion, regions]);
 
-    // **3️⃣ Properly scale and position the region**
     useEffect(() => {
         if (!shape) return;
 
-        // **Scaling Factors**
         const scaleX = containerSize.width / cameraSettings.resolution[0];
         const scaleY = containerSize.height / cameraSettings.resolution[1];
 
@@ -89,7 +83,6 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
             const width = isSquare ? shape.side ?? 100 : shape.width ?? 100;
             const height = isSquare ? shape.side ?? 100 : shape.height ?? 100;
 
-            // **Convert from center-based to top-left positioning**
             const adjustedX = shape.center.x * scaleX - (width * scaleX) / 2;
             const adjustedY = shape.center.y * scaleY - (height * scaleY) / 2;
 
@@ -116,7 +109,6 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
 
     }, [shape]);
 
-    // **4️⃣ Handle Crop Adjustments**
     const onCropChange = (newCrop: Crop) => {
         setCrop(newCrop);
     };
@@ -124,7 +116,6 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
     const onCropComplete = (pixelCrop: Crop) => {
         if (!pixelCrop) return;
 
-        // Reverse scaling back to backend values
         const scaleX = cameraSettings.resolution[0] / containerSize.width;
         const scaleY = cameraSettings.resolution[1] / containerSize.height;
 
@@ -195,7 +186,6 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
         console.log("Region submitted successfully!");
     };
 
-    // **4️⃣ Handle Polygon Dragging**
     const handleMouseDown = (index: number) => {
         draggingIndex.current = index;
     };
@@ -211,7 +201,6 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
             const newPoints = [...prev];
             newPoints[draggingIndex.current!] = { x: newX, y: newY };
         
-            // Update settings state so textarea updates dynamically
             setUpdatedSettings({ points: newPoints });
         
             return newPoints;
@@ -257,7 +246,6 @@ function UpdateRegion({ savedRegions, regionId, savedRegionIDs, cameraId, camera
                             strokeWidth="2"
                         />
 
-                        {/* Draggable Polygon Points */}
                         {polygonPoints.map((point, index) => (
                             <circle
                                 key={index}

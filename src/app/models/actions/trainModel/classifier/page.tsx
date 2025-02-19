@@ -32,6 +32,8 @@ import { RegionStructure } from '@/app/operations/regions/structures/RegionStruc
 import { Urls } from './components';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
+import CollectDataUsingUpload from './components/reactFlowCardNodes/collectDataNode/uploadActiveComponent/CollectDataUsingUpload';
+import useRegionService from '@/app/operations/regions/hooks/useRegions';
 
 const capturedImagesList: string[] = [];
 const initialRegion: RegionStructure = {
@@ -99,6 +101,7 @@ export const useTraining = () => {
 
 function ClassNode({ data }: { data: LabelAnnotationModel }) {
   const [cameras, savedCameraIDs] = useCameraService();
+  const [regions, savedRegionIDs] = useRegionService();
   const [selectedCameraId, setSelectedCameraId] = useState<string>(cameras.length > 0 ? cameras[0].id : '');
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [cardCapturedImages, setCardCapturedImages] = useState<{ [ClassCardAnnotationId: string]: Array<any> }>({});
@@ -115,9 +118,11 @@ function ClassNode({ data }: { data: LabelAnnotationModel }) {
   const [isEditingCardName, setIsEditingCardName] = useState(false);
   const [title, setTitle] = useState(data?.annotation?.label || 'class??');
 
+  const [isUploadActive, setIsUploadActive] = useState(false);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [isWebcamSettingsActive, setIsWebcamSettingsActive] = useState(false);
-  const [isUploadImagesActive, setIsUploadImagesActive] = useState(false);
 
   const handleEditClick = () => {
     setIsEditingCardName(true);
@@ -146,7 +151,8 @@ function ClassNode({ data }: { data: LabelAnnotationModel }) {
   };
 
   const handleUploadClick = () => {
-    setIsUploadImagesActive(true);
+    setIsCropModalOpen(true);
+    setIsUploadActive(true);
   };
 
   useEffect(() => {
@@ -185,8 +191,6 @@ function ClassNode({ data }: { data: LabelAnnotationModel }) {
 
   }, [classCardAnnotation]);
 
-
-
   return (
     <>
       <Card className="w-full max-w-[450px] h-auto">
@@ -202,7 +206,20 @@ function ClassNode({ data }: { data: LabelAnnotationModel }) {
         <div className="border-t border-gray-300" />
 
         <CardContent className="px-3 py-0">
-          {isWebcamActive ? (
+          {isUploadActive ? (
+            <div className="flex flex-row">
+              <CollectDataUsingUpload
+                capturedImages={capturedImages}
+                setCapturedImages={setCapturedImages}
+                setIsUploadActive={setIsUploadActive}
+                setIsCropModalOpen={setIsCropModalOpen}
+                isCropModalOpen={isCropModalOpen}
+                savedRegions={regions}
+                savedRegionIDs={savedRegionIDs}
+              />
+            </div>
+          ) :
+            isWebcamActive ? (
             isWebcamSettingsActive ? (
               <>
                 <WebCamSettingsActiveComponent
@@ -232,7 +249,7 @@ function ClassNode({ data }: { data: LabelAnnotationModel }) {
                   <VideosIcon className="mr-2" />
                   Webcam
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleUploadClick}>
                   <UploadIcon className="mr-2" />
                   Upload
                 </Button>
