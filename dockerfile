@@ -14,13 +14,16 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-COPY --from=builder /app/.next .next
-COPY --from=builder /app/node_modules node_modules
-COPY --from=builder /app/package.json package.json
+COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/package.json /app/package.json
+COPY --from=builder /app/src/db.json /app/src/db.json  
 
-# how to make it check if models and datasets folders otherwise create them?
-# COPY --from=builder /app/models models
-# COPY --from=builder /app/datasets datasets
+EXPOSE 50016 3001  
 
+ARG MODE=prod
+ENV MODE=${MODE}
 
-CMD ["npm", "run", "start"]
+# CMD ["sh", "-c", "cp -r /app/node_modules", "if [ \"$MODE\" = \"dev\" ]; then npm run start:dev; else npm run start:prod; fi"]
+CMD sh -c "cp -r /app/node_modules /app_host/node_modules 2>/dev/null || true && \
+   if [ \"$MODE\" = \"dev\" ]; then npm run start:dev; else npm run start:prod; fi"
