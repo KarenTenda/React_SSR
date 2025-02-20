@@ -15,7 +15,7 @@ function EditorPage(props: Props) {
   const editorName = graphProps ? JSON.parse(graphProps).name : null
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="h-screen w-full flex flex-col bg-gray-50 dark:bg-gray-800">
       <div className="sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 py-4 px-6 shadow-md">
         <Breadcrumb>
           <BreadcrumbList>
@@ -31,10 +31,10 @@ function EditorPage(props: Props) {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <p className="text-center text-lg max-w-3xl text-gray-700 dark:text-gray-300 mx-auto mt-2">
+        <h2 className="text-xl font-bold text-center mt-2 text-gray-900 dark:text-white">
           {editorName ? `Edit ${editorName}` : 'Create a new workflow to get started'}
 
-        </p>
+        </h2>
       </div>
       {/* <EditorProvider>
         <GraphBuilderEditor />
@@ -44,7 +44,7 @@ function EditorPage(props: Props) {
       <GraphBuilderPlaygroundEditor/>
       </PlaygroundEditorProvider> */}
 
-      <div className="flex-grow overflow-auto lg:h-[calc(100%-4rem)]">
+      <div className="flex-1 overflow-hidden">
         <PlaygroundExtEditorProvider>
           <PlaygroundExtEditor />
         </PlaygroundExtEditorProvider>

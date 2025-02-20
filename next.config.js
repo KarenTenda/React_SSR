@@ -29,7 +29,7 @@ const nextConfig = {
     NEXT_BACKEND_SERVER_PORT: process.env.NEXT_BACKEND_SERVER_PORT,
   },
   webpack: (config) => {
-    config.externals = [...config.externals, { canvas: 'canvas' }]; // required to make Konva & react-konva work
+    config.externals = [...config.externals, { canvas: 'canvas' }];
     return config;
   },
 };

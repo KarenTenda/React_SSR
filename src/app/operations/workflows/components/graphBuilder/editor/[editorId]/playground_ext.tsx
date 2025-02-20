@@ -2037,14 +2037,14 @@ const PlaygroundExtEditor = () => {
     }, [state.edges, setEdges]);
 
     return (
-        <div>
+        <>
             <ResizablePanelGroup direction="horizontal">
                 <ResizablePanel defaultSize={70}>
-                    <div className="flex h-full items-center justify-center">
+                    {/* <div className="flex h-full items-center justify-center">
                         <div
                             style={{ width: '100%', height: '100%', paddingBottom: '70px' }}
                             className="relative"
-                        >
+                        > */}
                             {isWorkFlowLoading ? (
                                 <div className="absolute flex h-full w-full items-center justify-center">
                                     <svg
@@ -2065,7 +2065,7 @@ const PlaygroundExtEditor = () => {
                                     </svg>
                                 </div>
                             ) : (
-                                <div onDrop={onDrop} onDragOver={onDragOver} style={{ width: '100%', height: '850px' }}>
+                                // <div onDrop={onDrop} onDragOver={onDragOver} style={{ width: '100%', height: '850px' }}>
                                     <ReactFlow
                                         nodes={nodes}
                                         edges={edges}
@@ -2077,15 +2077,17 @@ const PlaygroundExtEditor = () => {
                                         onConnect={onConnect}
                                         onNodeClick={onNodeClick}
                                         fitView
+                                        onDrop={onDrop}
+                                        onDragOver={onDragOver}
                                     >
                                         <Background />
                                         <MiniMap />
                                         <Controls />
                                     </ReactFlow>
-                                </div>
+                                // </div>
                             )}
-                        </div>
-                    </div>
+                        {/* </div>
+                    </div> */}
                 </ResizablePanel>
                 <ResizableHandle />
                 <ResizablePanel defaultSize={30}>
@@ -2128,7 +2130,7 @@ const PlaygroundExtEditor = () => {
                     onCancel={handleCloseConflict}
                 />
             </CustomModal>
-        </div>
+        </>
     );
 };
 

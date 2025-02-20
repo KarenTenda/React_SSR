@@ -59,7 +59,7 @@ export interface LabelAnnotationModel extends Record<string, unknown> {
     annotation_type: 'LABEL'
     label: string;
     images: string[];
-    camera_id?: string;
+    camera_id?: string;;
     region: RegionStructure;
   };
   creator: string;
@@ -182,9 +182,11 @@ function ClassNode({ data }: { data: LabelAnnotationModel }) {
   useEffect(() => {
     // check if the classCardAnnotation is already in the cardClassAnnotations, if so updtae otherwise, add it
     const index = cardClassAnnotations.findIndex((card) => card.annotation_id === classCardAnnotation.annotation_id);
+    console.log("index: ", index)
     if (index !== -1) {
       cardClassAnnotations[index] = classCardAnnotation
     } else {
+      console.log("adding card annotation")
       cardClassAnnotations.push(classCardAnnotation);
     }
     console.log("cardClassAnnotations:", cardClassAnnotations);
@@ -220,42 +222,42 @@ function ClassNode({ data }: { data: LabelAnnotationModel }) {
             </div>
           ) :
             isWebcamActive ? (
-            isWebcamSettingsActive ? (
-              <>
-                <WebCamSettingsActiveComponent
-                  setIsWebcamSettingsActive={setIsWebcamSettingsActive}
-                />
-              </>
-            ) : (
-              <div className='flex flex-row'>
-                <CollectDataUsingWebcam
-                  selectedCameraId={selectedCameraId}
-                  setSelectedCameraId={setSelectedCameraId}
-                  cameras={cameras}
-                  setIsWebcamActive={setIsWebcamActive}
-                  setIsWebcamSettingsActive={setIsWebcamSettingsActive}
-                  capturedImages={capturedImages}
-                  setCapturedImages={setCapturedImages}
-                  setSelectedRegion={setSelectedRegion}
-                />
+              isWebcamSettingsActive ? (
+                <>
+                  <WebCamSettingsActiveComponent
+                    setIsWebcamSettingsActive={setIsWebcamSettingsActive}
+                  />
+                </>
+              ) : (
+                <div className='flex flex-row'>
+                  <CollectDataUsingWebcam
+                    selectedCameraId={selectedCameraId}
+                    setSelectedCameraId={setSelectedCameraId}
+                    cameras={cameras}
+                    setIsWebcamActive={setIsWebcamActive}
+                    setIsWebcamSettingsActive={setIsWebcamSettingsActive}
+                    capturedImages={capturedImages}
+                    setCapturedImages={setCapturedImages}
+                    setSelectedRegion={setSelectedRegion}
+                  />
 
-              </div>
-            )
-          ) : (
-            <>
-              <p className="text-sm mb-2">Add Image Samples:</p>
-              <div className="flex space-x-2 pb-2">
-                <Button variant="outline" size="sm" onClick={handleWebcamClick}>
-                  <VideosIcon className="mr-2" />
-                  Webcam
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleUploadClick}>
-                  <UploadIcon className="mr-2" />
-                  Upload
-                </Button>
-              </div>
-            </>
-          )}
+                </div>
+              )
+            ) : (
+              <>
+                <p className="text-sm mb-2">Add Image Samples:</p>
+                <div className="flex space-x-2 pb-2">
+                  <Button variant="outline" size="sm" onClick={handleWebcamClick}>
+                    <VideosIcon className="mr-2" />
+                    Webcam
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleUploadClick}>
+                    <UploadIcon className="mr-2" />
+                    Upload
+                  </Button>
+                </div>
+              </>
+            )}
         </CardContent>
       </Card>
       <Handle type="source" position={Position.Right} />
@@ -265,10 +267,10 @@ function ClassNode({ data }: { data: LabelAnnotationModel }) {
 
 function CreateDatasetNode() {
   const [isCreatingDataset, setIsCreatingDataset] = useState(false);
+
   const handleCreateDataset = async () => {
 
     if (cardClassAnnotations.length === 0) {
-      alert("No classes to create dataset!");
       toast({
         title: "No Classes",
         variant: "destructive",
@@ -276,6 +278,35 @@ function CreateDatasetNode() {
       });
       return;
     }
+
+    const invalidClasses = cardClassAnnotations.filter((card) => card.annotation.images.length === 0);
+    const invalidClassesNames = invalidClasses.map((card) => card.annotation.label);
+    if (invalidClasses.length > 0) {
+
+      toast({
+        title: "No Images",
+        variant: "destructive",
+        description: `Some classes have no images: ${invalidClassesNames.join(", ")}`,
+      });
+      return;
+    }
+
+    // if any of the images from the different classes have different sizes
+    // check for the analomy sizes. i.e if most of the images have the same size, look for the ones that stand out and identify them
+    // show the class and the images that have different sizes
+
+    // const imagesWithAnalomySizes = cardClassAnnotations.filter((card) => {
+    //   const sizes = card.annotation.images.map((image) => {
+    //     const img = new Image();
+    //     img.src = image;
+    //     return [img.width, img.height];
+    //   });
+    //   const uniqueSizes = [...new Set(sizes)];
+    //   return uniqueSizes.length > 1;
+    // });
+
+
+
     setIsCreatingDataset(true);
 
     try {
@@ -283,7 +314,7 @@ function CreateDatasetNode() {
       const response = await fetch(Urls.fetchCreatedDataset, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ annotations: cardClassAnnotations }), // Send all classes
+        body: JSON.stringify({ annotations: cardClassAnnotations }),
       });
 
       const data = await response.json();
@@ -295,7 +326,6 @@ function CreateDatasetNode() {
           description: `Dataset created successfully! ID: ${data.datasetId}`,
         });
         setIsCreatingDataset(false);
-        // alert(`Dataset created successfully! ID: ${data.datasetId}`);
       } else {
         console.error("Dataset creation failed:", data.message);
         toast({
@@ -373,11 +403,11 @@ function PreviewNode({ data }: any) {
   const [prediction, setPrediction] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { isTrainingDone } = useTraining();
+  const [stopInferenceProcess, setStopInferenceProcess] = useState(false)
 
   const runInference = async () => {
     console.log("Started Inference process");
-    setIsProcessing(true);
-
+    
     try {
       // implement a default image or error messgae if the imageUrl throws an error
 
@@ -392,30 +422,40 @@ function PreviewNode({ data }: any) {
         }),
       });
 
-      // ✅ Parse JSON once and store the result
-      const result = await response.json();
-      if (result.predictions && result.predictions.length > 0) {
-        // ✅ Extract all predictions from **first frame** (outer array)
-        const formattedPrediction = result.predictions[0] // ⬅ Extract first frame
-          .map((pred: { label: any; confidence: number }) =>
-            `${pred.label} (${(pred.confidence * 100).toFixed(2)}%)`
-          )
-          .join(", ");
+        setIsProcessing(true);
 
-        setPrediction(formattedPrediction); // ✅ Set formatted string
-      }
-      else {
-        setPrediction("No prediction found");
-      }
+        // ✅ Parse JSON once and store the result
+        const result = await response.json();
+
+        if (result.predictions && result.predictions.length > 0) {
+          // ✅ Extract all predictions from **first frame** (outer array)
+          const formattedPrediction = result.predictions[0] // ⬅ Extract first frame
+            .map((pred: { label: any; confidence: number }) =>
+              `${pred.label} (${(pred.confidence * 100).toFixed(2)}%)`
+            )
+            .join(", ");
+
+          setPrediction(formattedPrediction); // ✅ Set formatted string
+        }
+        else {
+          setPrediction("No prediction found");
+        }
+
 
     } catch (error) {
       console.error("🔴 Inference Error:", error);
       setPrediction("Failed to run model");
+      setIsProcessing(false);
 
     } finally {
       setIsProcessing(false);
     }
   };
+
+  const handleStopProcessing = () => {
+    setStopInferenceProcess(true);
+    setIsProcessing(false);
+  }
 
   useEffect(() => {
     if (isTrainingDone) {
@@ -433,15 +473,20 @@ function PreviewNode({ data }: any) {
     <>
       <Handle type="target" position={Position.Left} />
       <Card className="w-[200px] h-auto">
+
         <CardHeader className="flex flex-row justify-between items-center space-x-2 px-3 py-2">
           <CardTitle className="text-sm">{data.label}</CardTitle>
-          {/* <Button variant="outline" size="sm" className="text-sm" onClick={runInference}
-          disabled={!data.isTrained}
+          <Button variant="outline" size="sm" 
+            className="text-sm" 
+            onClick={handleStopProcessing}
+            disabled={!isProcessing}
           >
-            {isProcessing ? "Processing..." : "Run Model"}
-          </Button> */}
+            Stop
+          </Button>
         </CardHeader>
+
         <div className="border-t border-gray-300" />
+
         <CardContent className="flex flex-col px-3 py-2">
           {(!isTrainingDone) ? (
             <CardDescription className="text-sm">
@@ -477,7 +522,7 @@ const initialNodes = [
     type: 'classNode',
     position: { x: 100, y: 100 },
     data: {
-      annotation_id: '1',
+      annotation_id: 'cat',
       annotation: {
         annotation_type: 'LABEL',
         label: 'Cat',
@@ -512,7 +557,7 @@ const initialNodes = [
     type: 'classNode',
     position: { x: 100, y: 300 },
     data: {
-      annotation_id: '1',
+      annotation_id: 'dog',
       annotation: {
         annotation_type: 'LABEL',
         label: 'Dog',
@@ -547,7 +592,7 @@ const initialNodes = [
     type: 'classNode',
     position: { x: 100, y: 500 },
     data: {
-      annotation_id: '1',
+      annotation_id: 'other',
       annotation: {
         annotation_type: 'LABEL',
         label: 'Other',
@@ -623,7 +668,7 @@ function Flow() {
 
     const annotation_id = newId;
     const creator = 'karen';
-    const creation_date = new Date().toISOString(); // Proper date format
+    const creation_date = new Date().toISOString();
     const modification_date = new Date().toISOString();
     const status = { active: true };
 
@@ -679,15 +724,12 @@ function Flow() {
   const nodeTypes = useMemo(
     () => ({
       classNode: ClassNode,
-      // trainingNode: (props: any) => <TrainingNode {...props} setNodes={setNodes} />,
       trainingNode: TrainingNode,
       previewNode: PreviewNode,
       addClassNode: (props: any) => <AddClassNode {...props} onAddClass={addClassNode} />,
       createDatasetNode: CreateDatasetNode,
     }),
-    [addClassNode,
-      // setNodes
-    ]
+    [addClassNode]
   );
 
   const onNodesChange: OnNodesChange = useCallback(
@@ -707,7 +749,6 @@ function Flow() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50 dark:bg-gray-800">
-      {/* ✅ Breadcrumb Navigation */}
       <div className="sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 py-4 px-6 shadow-md">
         <Breadcrumb>
           <BreadcrumbList>
@@ -731,7 +772,6 @@ function Flow() {
         </h2>
       </div>
 
-      {/* ✅ ReactFlow Diagram */}
       <div className="flex-1 overflow-hidden">
         <TrainingProvider>
           <ReactFlow
